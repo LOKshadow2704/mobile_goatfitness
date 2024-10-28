@@ -23,7 +23,7 @@ import SwiperFlatList from "react-native-swiper-flatlist";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import PersonelTrainerItem from "@/components/PersonelTrainerItem/PersonelTrainerItem";
 import axios from "axios";
-import { API_URL } from "@env";
+import Constants from "expo-constants"; 
 
 const { width: viewportWidth } = Dimensions.get("window");
 
@@ -93,7 +93,7 @@ const PersonalTrainerScreen = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/PT`);
+      const response = await axios.get(`${Constants.expoConfig?.extra?.API_URL}/personalTrainer/all`);
       setPts(response.data);
     } catch (err) {
       setError("Không thể tải sản phẩm. Vui lòng thử lại sau!");

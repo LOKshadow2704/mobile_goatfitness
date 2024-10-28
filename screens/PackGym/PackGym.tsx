@@ -2,7 +2,7 @@ import { Heading, Text, View } from "native-base";
 import React, { useEffect, useState } from "react";
 import PackGymItem from "@/components/PackGymItem/PackGymItem";
 import axios from "axios";
-import { API_URL } from "@env";
+import Constants from "expo-constants"; 
 
 interface PackGym {
   IDGoiTap: number;
@@ -12,7 +12,7 @@ interface PackGym {
 }
 
 const PackGymScreen = () => {
-  const [pack, setPack] = useState(false);
+  const [pack, setPack] = useState<boolean>(false);  // Xác định rõ ràng kiểu dữ liệu
   const [data, setData] = useState<PackGym[] | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +22,19 @@ const PackGymScreen = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${API_URL}/gympack`
+        `${Constants.expoConfig?.extra?.API_URL}/gympack`  // Sử dụng đúng Constants.expoConfig
       );
       setData(response.data);
+
+      // Kiểm tra nếu có dữ liệu pack thì setPack(true)
+      if (response.data && response.data.length > 0) {
+        setPack(true);
+      } else {
+        setPack(false);
+      }
     } catch (err) {
       setError("Không thể tải danh sách Gói tập. Vui lòng thử lại sau!");
-      console.log(err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -49,17 +56,20 @@ const PackGymScreen = () => {
     ));
   };
 
-  // useEffect(()=>{
-  //   // check gói tập
-  // },[])
-  return pack ? (
+  return (
     <View px={5} pt={2}>
-      <Text fontSize="xs">Tồn tại gói tập</Text>
-    </View>
-  ) : (
-    <View px={5} pt={2}>
-      <Heading fontSize="md">Đăng ký càng lâu, ưu đãi càng lớn</Heading>
-      {data ? renderItem(data) : <Text>Không có dữ liệu</Text>}
+      {loading ? (
+        <Text>Đang tải dữ liệu...</Text>
+      ) : error ? (
+        <Text>{error}</Text>
+      ) : pack ? (
+        <>
+          <Heading fontSize="md">Đăng ký càng lâu, ưu đãi càng lớn</Heading>
+          {data ? renderItem(data) : <Text>Không có dữ liệu</Text>}
+        </>
+      ) : (
+        <Text>Không tồn tại gói tập</Text>
+      )}
     </View>
   );
 };

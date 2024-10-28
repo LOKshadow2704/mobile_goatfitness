@@ -24,30 +24,40 @@ export default function Layout() {
   const statusBarHeight = StatusBar.currentHeight || 20; // Giá trị mặc định cho iOS
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NativeBaseProvider theme={theme}>
-        <Provider store={store}>
+    <Provider store={store}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NativeBaseProvider theme={theme}>
           <View style={[styles.container, { paddingTop: statusBarHeight }]}>
             <Stack screenOptions={{ headerShown: false }}>
               {/* Màn hình chào mừng */}
               <Stack.Screen name="index" />
-              {/* Các tab của Home */}
+              {/* Các tab của USER */}
               <Stack.Screen name="Home/index" />
               <Stack.Screen name="Home/tabs/HomeContents" />
-              <Stack.Screen name="Home/tabs/PackGym" />
-              <Stack.Screen name="Home/tabs/PersonalTrainer" />
-              <Stack.Screen name="Home/tabs/Products/Products" />
-              <Stack.Screen name="Home/tabs/User" />
-              {/* Màn hình chi tiết sản phẩm */}
+                {/* Màn hình chi tiết Gói tập */}
+              <Stack.Screen name="Home/tabs/PackGym/index" />
+              <Stack.Screen name="Home/tabs/PackGym/PackGymDetail/[id]" />
+              <Stack.Screen name="Home/tabs/PackGym/PaymentSuccess" />
+              <Stack.Screen name="Home/tabs/PackGym/PaymentCancle" />
+              {/* Màn hình chi tiết Huấn luyện viên */}
+              <Stack.Screen name="Home/tabs/PersonalTrainer/index" />
+              <Stack.Screen name="Home/tabs/PersonalTrainer/PersonalTrainerDetail/[id]" />
+              <Stack.Screen name="Home/tabs/PersonalTrainer/PaymentSuccess" />
+              <Stack.Screen name="Home/tabs/PersonalTrainer/PaymentCancle" />
+                {/* Màn hình chi tiết sản phẩm */}
+              <Stack.Screen name="Home/tabs/Products/index" />
               <Stack.Screen name="Home/tabs/Products/ProductDetail/[id]" />
+              <Stack.Screen name="Home/tabs/Products/PaymentSuccess" />
+              <Stack.Screen name="Home/tabs/Products/PaymentCancle" />
+              <Stack.Screen name="Home/tabs/User" />
               {/* Stack Admin */}
               <Stack.Screen name="Manager/Admin/index" />
               <Stack.Screen name="Manager/Admin/QRScan" />
             </Stack>
           </View>
-        </Provider>
-      </NativeBaseProvider>
-    </GestureHandlerRootView>
+        </NativeBaseProvider>
+      </GestureHandlerRootView>
+    </Provider>
   );
 }
 

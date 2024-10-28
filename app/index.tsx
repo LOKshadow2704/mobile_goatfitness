@@ -1,14 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
 import WelcomeScreen from "@/layouts/Welcome/Welcome";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
+import { autoLogin } from "@/redux/actions/authActions";
+import * as SecureStore from "expo-secure-store";
 export default function App() {
   const router = useRouter();
+  const dispatch = useDispatch(); // Khai báo dispatch để gọi action
   const auth = useSelector((state: RootState) => state.auth);
+
   useEffect(() => {
-    handleLogin();
+    console.log(auth.user)
+    if (auth.user) {
+      handleLogin();
+    } else {
+      dispatch(autoLogin() as any);
+    }
   }, [auth.user]);
+
   const handleLogin = () => {
     switch (auth.user?.TenVaiTro) {
       case "admin":
@@ -21,9 +31,10 @@ export default function App() {
         router.push("/Home");
         break;
       default:
-        console.log('none')
+        console.log("none");
         break;
     }
   };
+
   return <WelcomeScreen onLogin={handleLogin} />;
 }

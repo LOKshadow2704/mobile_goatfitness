@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import {
-  Badge, Button, Image, Text, View
+  Badge, Button, Image, Text, useToast, View
 } from "native-base";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import { Href, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import axios from "axios";
+import Constants from 'expo-constants';
 
 interface Product {
   id: number;
@@ -20,6 +23,8 @@ interface ProductItemProps {
 const ProductItem: React.FC<ProductItemProps> = ({ product }) => {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false); 
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
 
   const goToProductDetail = () => {
     if (isNavigating) return; 
@@ -28,6 +33,41 @@ const ProductItem: React.FC<ProductItemProps> = ({ product }) => {
     setTimeout(() => {
       setIsNavigating(false); 
     }, 1000); 
+  };
+
+  const addToCart = async () => {
+    setLoading(true);
+    try {
+      const accessToken = await SecureStore.getItemAsync("access_token");
+      const phpSessId = await SecureStore.getItemAsync("phpsessid");
+
+      const response = await axios.post(
+        `${Constants.expoConfig?.extra?.API_URL}/cart/add`, // API endpoint to add to cart
+        { "IDSanPham": product.id},
+        {
+          headers: {
+            "PHPSESSID": phpSessId,
+            "Authorization": `Bearer ${accessToken}`,
+            "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`
+          },
+        }
+      );
+      if (response.status === 200) {
+        toast.show({
+          description: "Sản phẩm đã được thêm vào giỏ hàng!",
+          placement: "top",
+          style: { marginTop: 30 }
+        });
+      }
+    } catch (error) {
+      console.error("Error adding product to cart:", error);
+      toast.show({
+        description: "Có lỗi xảy ra. Vui lòng thử lại.",
+        bgColor: "danger",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
 
@@ -55,6 +95,7 @@ const ProductItem: React.FC<ProductItemProps> = ({ product }) => {
           _hover={{ bg: "amber.500" }}
           shadow={2}
           style={styles.button}
+          onPress={addToCart}
         >
           Thêm vào giỏ hàng
         </Button>

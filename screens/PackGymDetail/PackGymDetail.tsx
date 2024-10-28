@@ -1,88 +1,65 @@
 import DefaultLayout from "@/layouts/DefaultLayout/DefaultLayout";
 import axios from "axios";
 import { useRouter } from "expo-router";
-import { Box, Button, Heading, HStack, Text, View, VStack, useToast } from "native-base";
+import {
+  Box,
+  Button,
+  Heading,
+  HStack,
+  Text,
+  View,
+  VStack,
+  useToast,
+} from "native-base";
 import React, { useEffect, useState } from "react";
-import { Dimensions, ImageBackground, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  Dimensions,
+  ImageBackground,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
 import FontAwesomeIcon from "react-native-vector-icons/FontAwesome";
-import RenderHtml from 'react-native-render-html';
-import Constants from "expo-constants"; 
+import RenderHtml from "react-native-render-html";
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 
-interface ProductDetailScreenProps {
+interface PackGymDetailScreenProps {
   id: string;
 }
 
-interface Product {
-  IDSanPham: number;
-  TenSP: string;
-  Mota: string;
-  DonGia: number;
-  IMG: string;
-  SoLuong: number;
+interface PackGym {
+  IDGoiTap: number;
+  TenGoiTap: string;
+  ThoiHan: number;
+  Gia: number;
 }
 const screenWidth = Dimensions.get("window").width;
 
-const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ id }) => {
+const PackGymDetailScreen: React.FC<PackGymDetailScreenProps> = ({ id }) => {
   const router = useRouter();
   const toast = useToast();
   const [loading, setLoading] = useState<boolean>(true);
-  const [product, setProduct] = useState<Product | null>(null);
+  const [packgym, setPackgym] = useState<PackGym | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { width } = useWindowDimensions();
+  const [image , setImage] = useState<string | null>();
 
-  const fetchProduct = async () => {
+  const fetchPackgym = async () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${Constants.expoConfig?.extra?.API_URL}/products/info?IDSanPham=${id}`
+        `${Constants.expoConfig?.extra?.API_URL}/Packgyms/info?id=${id}`
       );
-      setProduct(response.data);
+      setPackgym(response.data);
+      response.data.TenGoiTap.includes("classic")
+        ? setImage("https://i.imgur.com/JyCT4PR.png")
+        : setImage("https://i.imgur.com/XO0ARYV.png")
     } catch (err) {
       setError("Không thể tải sản phẩm. Vui lòng thử lại sau! " + err);
     } finally {
       setLoading(false);
     }
   };
-
-  // Hàm thêm vào giỏ hàng
-  const addToCart = async () => {
-    try {
-      const accessToken = await SecureStore.getItemAsync("access_token");
-      const phpSessId = await SecureStore.getItemAsync("phpsessid");
-      if (!product) return;
-
-      const response = await axios.post(
-        `${Constants.expoConfig?.extra?.API_URL}/cart/add`, // API endpoint to add to cart
-        { "IDSanPham": product.IDSanPham },
-        {
-          headers: {
-            "PHPSESSID": phpSessId,
-            "Authorization": `Bearer ${accessToken}`,
-            "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        toast.show({
-          description: "Sản phẩm đã được thêm vào giỏ hàng!",
-          placement: "top",
-          style: { marginTop: 30 }
-        });
-      }
-    } catch (error) {
-      console.error("Error adding product to cart:", error);
-      toast.show({
-        description: "Có lỗi xảy ra. Vui lòng thử lại.",
-        bgColor: "danger",
-      });
-    }
-  };
-
-  useEffect(() => {
-    fetchProduct();
-  }, []);
 
   return (
     <DefaultLayout>
@@ -91,11 +68,11 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ id }) => {
           <Text>Loading...</Text>
         ) : error ? (
           <Text>{error}</Text>
-        ) : product ? (
+        ) : packgym ? (
           <>
             <ImageBackground
               style={styles.ImageBox}
-              source={{ uri: product.IMG }}
+              source={image ? { uri: image } : require('@/assets/images/avatar-trang-4.jpg')}
               resizeMode="center"
             >
               <Button
@@ -114,19 +91,24 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ id }) => {
             </ImageBackground>
             <VStack px={3} space={2}>
               <Heading pt={3} style={{ color: "#ea580c" }}>
-                {product.DonGia.toLocaleString("vi-VN", {
+                {packgym.DonGia.toLocaleString("vi-VN", {
                   style: "currency",
                   currency: "VND",
                 })}
               </Heading>
-              <Heading size={"sm"}>{product.TenSP}</Heading>
+              <Heading size={"sm"}>{packgym.TenSP}</Heading>
             </VStack>
             <HStack space={2} px={3} py={3}>
-              <Button w={"49%"} onPress={addToCart}>Thêm vào giỏ hàng</Button>
+              <Button w={"49%"} onPress={addToCart}>
+                Thêm vào giỏ hàng
+              </Button>
               <Button w={"49%"}>Mua ngay</Button>
             </HStack>
             <View px={3}>
-              <RenderHtml source={{ html: product.Mota }} contentWidth={width} />
+              <RenderHtml
+                source={{ html: packgym.Mota }}
+                contentWidth={width}
+              />
             </View>
           </>
         ) : (
@@ -156,4 +138,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProductDetailScreen;
+export default PackGymDetailScreen;

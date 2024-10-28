@@ -17,7 +17,7 @@ import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import ProductItem from "@/components/ProductItem/ProductItem";
 import axios from "axios";
-import { API_URL } from "@env";
+import Constants from 'expo-constants';
 import Cart from "@/components/Cart/Cart";
 
 interface Product {
@@ -59,7 +59,7 @@ const ProductsScreen = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/products`);
+      const response = await axios.get(`${ Constants.expoConfig?.extra?.API_URL}/products`);
       setProducts(response.data);
     } catch (err) {
       setError("Không thể tải sản phẩm. Vui lòng thử lại sau!" + err);

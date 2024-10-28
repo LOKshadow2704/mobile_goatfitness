@@ -2,7 +2,7 @@ import { Dispatch } from 'redux';
 import axios from 'axios';
 import { authConstants } from '../constants/authConstants';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '@env';
+import Constants from "expo-constants";
 
 // Định nghĩa kiểu cho User và phản hồi từ API
 interface User {
@@ -22,6 +22,8 @@ interface ApiResponse {
   message: string;
   access_token: string;
   refresh_token: string;
+  access_token_expires_in: number;
+  refresh_token_expires_in: number;
   phpsessid: string;
   user: User;
 }
@@ -32,13 +34,9 @@ export const login = (username: string, password: string) => async (dispatch: Di
   try {
     const response: ApiResponse = await ApiLogin(username, password); // Đảm bảo kiểu dữ liệu đúng
     const user = response.user;
-
-    // Lưu token vào SecureStore
-    await SecureStore.setItemAsync('access_token',response.access_token);
-    await SecureStore.setItemAsync('refresh_token',response.refresh_token);
-    await SecureStore.setItemAsync('phpsessid',response.phpsessid);
-
-    // Lưu thông tin người dùng vào AsyncStorage (hoặc bạn có thể dùng SecureStore)
+    await SecureStore.setItemAsync('access_token', response.access_token);
+    await SecureStore.setItemAsync('refresh_token', response.refresh_token);
+    await SecureStore.setItemAsync('phpsessid', response.phpsessid);
     await SecureStore.setItemAsync('user', JSON.stringify(user));
 
     // Dispatch action thành công
@@ -64,28 +62,75 @@ export const login = (username: string, password: string) => async (dispatch: Di
 
 // Hàm tự động đăng nhập
 export const autoLogin = () => async (dispatch: Dispatch): Promise<void> => {
-  const userData = await SecureStore.getItemAsync('user'); // Thay đổi để lấy user từ SecureStore
-  const accessToken = await SecureStore.getItemAsync('access_token');
+  try {
+    // Lấy refresh token và user từ SecureStore
+    const refreshToken = await SecureStore.getItemAsync('refresh_token');
+    const userJson = await SecureStore.getItemAsync('user');
+    const user: User | null = userJson ? JSON.parse(userJson) : null;
 
-  if (userData && accessToken) {
-    const user: User = JSON.parse(userData);
-    dispatch({
-      type: authConstants.LOGIN_SUCCESS,
-      payload: { user }
-    });
+    // Kiểm tra nếu refresh token và user tồn tại
+    if (refreshToken && user && user.TenDangNhap) {
+      const url = `${Constants.expoConfig?.extra?.API_URL}/login/refresh-token`;
+      const fetchData = await axios.post(url, {
+        refresh_token: refreshToken,
+        username: user.TenDangNhap,
+      }, {
+        withCredentials: true,
+        headers: {
+          'User-Agent': 'MOBILE_GOATFITNESS',
+        },
+      });
+
+      const response = fetchData.data; // Đảm bảo sử dụng phản hồi từ Axios
+      const updatedUser = response.user; // Lấy thông tin người dùng cập nhật từ phản hồi
+
+      // Lưu trữ lại các thông tin mới
+      await SecureStore.setItemAsync('access_token', response.access_token);
+      await SecureStore.setItemAsync('refresh_token', response.refresh_token);
+      await SecureStore.setItemAsync('phpsessid', response.phpsessid);
+      await SecureStore.setItemAsync('user', JSON.stringify(updatedUser));
+
+      // Dispatch action đăng nhập thành công
+      dispatch({
+        type: authConstants.LOGIN_SUCCESS,
+        payload: { user: updatedUser },
+      });
+    }
+  } catch (error: unknown) {
+    // Kiểm tra nếu lỗi là Axios error
+    if (axios.isAxiosError(error)) {
+      console.log('Axios Error Details:', error.response);
+      dispatch({
+        type: authConstants.LOGIN_FAILURE,
+        payload: error.response?.data?.message || 'Failed to refresh token. Please log in again.',
+      });
+    } else if (error instanceof Error) {
+      console.error('Error Message:', error.message);
+      dispatch({
+        type: authConstants.LOGIN_FAILURE,
+        payload: error.message,
+      });
+    } else {
+      console.error('Unexpected Error:', error);
+      dispatch({
+        type: authConstants.LOGIN_FAILURE,
+        payload: 'An unexpected error occurred. Please try again.',
+      });
+    }
   }
 };
+
 
 // Hàm đăng xuất
 export const userLogout = () => async (dispatch: Dispatch): Promise<void> => {
   try {
     const accessToken = await SecureStore.getItemAsync('access_token');
     const phpsessid = await SecureStore.getItemAsync('phpsessid');
-    console.log(accessToken +"," + phpsessid)
-    const response = await axios.get(`${API_URL}/logout`, {
+    const response = await axios.get(`${Constants.expoConfig?.extra?.API_URL}/logout`, {
       headers: {
-        Authorization: `Bearer ${accessToken}`, // Gửi access_token
-        'PHPSESSID': phpsessid // Gửi phpsessid
+        "Authorization": `Bearer ${accessToken}`, // Gửi access_token
+        'PHPSESSID': phpsessid,// Gửi phpsessid
+        'User-Agent': "MOBILE_GOATFITNESS"
       }
     });
     if (response.status === 200) {
@@ -109,9 +154,7 @@ export const userLogout = () => async (dispatch: Dispatch): Promise<void> => {
 // API function using axios
 const ApiLogin = async (username: string, password: string): Promise<ApiResponse> => {
   try {
-    console.log('Sending request to server with:', { username, password });
-
-    const response = await axios.post<ApiResponse>(`${API_URL}/login`, {
+    const response = await axios.post<ApiResponse>(`${Constants.expoConfig?.extra?.API_URL}/login`, {
       username,
       password,
     }, {
@@ -120,9 +163,7 @@ const ApiLogin = async (username: string, password: string): Promise<ApiResponse
         'User-Agent': 'MOBILE_GOATFITNESS',
       }
     });
-
-    console.log('Response Data:', response.data);
-    return response.data; // Đảm bảo rằng phản hồi chứa đủ thuộc tính
+    return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       console.error('Axios Error Details:');
