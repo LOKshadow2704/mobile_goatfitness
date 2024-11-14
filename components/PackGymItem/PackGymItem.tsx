@@ -1,22 +1,36 @@
+import React, { useState } from "react";
+import { useRouter } from "expo-router";
 import { Badge, Box, Button, HStack, Image, Text, View } from "native-base";
-import React from "react";
 import { StyleSheet } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import axios from "axios";
+import Constants from "expo-constants";
+import PaymentSelect from "@/components/PaymentSelect/PaymentSelect";
 
 interface PackGymItem {
-  IDGoiTap: number,
-  TenGoiTap: string,
-  ThoiHan: number,
-  Gia: number
+  IDGoiTap: number;
+  TenGoiTap: string;
+  ThoiHan: number;
+  Gia: number;
 }
 
 interface PackGymItemProps {
   packgym: PackGymItem;
+  hide: boolean;
 }
 
-const PackGymItem: React.FC<PackGymItemProps> = ({ packgym }) => {
+const PackGymItem: React.FC<PackGymItemProps> = ({ packgym, hide }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [showPaymentSelect, setShowPaymentSelect] = useState(false);
+
   const imageUrl = packgym.TenGoiTap.includes("classic")
     ? "https://i.imgur.com/JyCT4PR.png"
     : "https://i.imgur.com/XO0ARYV.png";
+
+  // Tạo dữ liệu body để truyền vào PaymentSelect
+  const createBody = () => ({
+    IDGoiTap: packgym.IDGoiTap
+  });
 
   return (
     <View style={styles.itemContainer} px={2} py={5} my={2}>
@@ -27,9 +41,9 @@ const PackGymItem: React.FC<PackGymItemProps> = ({ packgym }) => {
           alt={packgym.TenGoiTap}
         />
         <Box flex={1} ml={3}>
-          <HStack justifyContent={'space-between'} alignItems={'center'}>
+          <HStack justifyContent="space-between" alignItems="center">
             <Text style={styles.name}>{packgym.TenGoiTap}</Text>
-            <Button variant={'link'}>Xem chi tiết</Button>
+            <Text style={styles.priceText}>{packgym.ThoiHan} ngày</Text>
           </HStack>
 
           <Badge
@@ -42,7 +56,7 @@ const PackGymItem: React.FC<PackGymItemProps> = ({ packgym }) => {
               {`Giá gói: ${Intl.NumberFormat("vi-VN", {
                 style: "currency",
                 currency: "VND",
-              }).format(packgym.Gia)} - ${packgym.ThoiHan} ngày`}
+              }).format(packgym.Gia)}`}
             </Text>
           </Badge>
         </Box>
@@ -61,9 +75,21 @@ const PackGymItem: React.FC<PackGymItemProps> = ({ packgym }) => {
         _hover={{ bg: "amber.500" }}
         shadow={2}
         style={styles.button}
+        isDisabled={hide || loading}
+        onPress={() => setShowPaymentSelect(true)} // Hiển thị modal PaymentSelect
       >
-        Đăng ký ngay
+        {loading ? "Đang tải..." : "Đăng ký ngay"}
       </Button>
+
+      {/* Hiển thị modal chọn phương thức thanh toán */}
+      {showPaymentSelect && (
+        <PaymentSelect
+          showPaymentModal={showPaymentSelect}
+          setShowPaymentModal={setShowPaymentSelect}
+          type="gympack"
+          body={createBody()}
+        />
+      )}
     </View>
   );
 };
@@ -108,7 +134,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   priceText: {
-    color: "#3c763d", // Màu chữ cần được đặt ở đây
+    color: "#3c763d",
     fontSize: 14,
     fontWeight: "500",
     textAlign: "left",

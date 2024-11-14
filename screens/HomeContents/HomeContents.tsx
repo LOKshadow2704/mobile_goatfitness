@@ -1,14 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
+import * as LocalAuthentication from "expo-local-authentication";
 import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import Ionicons from "react-native-vector-icons/Ionicons";
 import {
-  Avatar,
   Box,
   Button,
   Center,
-  Divider,
   Heading,
   HStack,
   Text,
@@ -18,41 +14,45 @@ import {
 import { SCREEN_WIDTH } from "@/assets/diminsons/diminsons";
 import { Image, ScrollView, StyleSheet } from "react-native";
 import ProductItem from "@/components/ProductItem/ProductItem";
-
-
+import QRCodeModal from "@/components/QRCodeModal/QRCodeModal";
 
 interface Product {
   id: string;
   name: string;
   image: string;
-  price: number
+  price: number;
 }
 
 const HomeContentsScreen = () => {
+  const [isQRCodeVisible, setQRCodeVisible] = useState(false);
+  const [qrCodeTimeoutId, setQrCodeTimeoutId] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   const products = [
-    { id: "1", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "2", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "3", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "4", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "5", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "6", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "7", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
-    { id: "8", name: "Găng tay Aolike Gloves Pro Wrist Wrap", price: 20000, image: "https://i.imgur.com/vICs0bu.png" },
+    {
+      id: "1",
+      name: "Găng tay Aolike Gloves Pro Wrist Wrap",
+      price: 20000,
+      image: "https://i.imgur.com/vICs0bu.png",
+    },
+    // Thêm sản phẩm khác nếu cần...
   ];
+
+  // Hàm render grid sản phẩm
   const renderGrid = (items: Product[]) => {
     const rows = [];
     for (let i = 0; i < items.length; i += 2) {
       const pair = [items[i], items[i + 1]];
       rows.push(
-        <HStack space={2} style={styles.row} key={i}>
+        <HStack space={2} style={styles.row} key={`row-${i}`}>
           {pair.map((prod, idx) =>
             prod ? (
               <VStack key={prod.id} style={styles.col}>
                 <ProductItem product={prod} />
               </VStack>
             ) : (
-              <View key={idx} style={styles.col} /> // Placeholder cho cột trống nếu cần
+              <View key={`placeholder-${i}-${idx}`} style={styles.col} />
             )
           )}
         </HStack>
@@ -60,10 +60,47 @@ const HomeContentsScreen = () => {
     }
     return rows;
   };
+
+  // Hàm check-in và hiển thị QR code sau khi xác thực vân tay thành công
+  const handleCheckIn = async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (hasHardware && isEnrolled) {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Xác thực vân tay để tạo mã QR",
+      });
+      if (result.success) {
+        setQRCodeVisible(true);
+        const timeoutId = setTimeout(() => setQRCodeVisible(false), 60000);
+        setQrCodeTimeoutId(timeoutId);
+      } else {
+        alert("Xác thực thất bại! Vui lòng thử lại.");
+      }
+    } else {
+      alert("Thiết bị không hỗ trợ hoặc chưa cài đặt vân tay.");
+    }
+  };
+
+  const handleCloseQRCodeModal = () => {
+    setQRCodeVisible(false);
+    if (qrCodeTimeoutId) {
+      clearTimeout(qrCodeTimeoutId);
+      setQrCodeTimeoutId(null);
+    }
+  };
+
+  const userInfo = JSON.stringify({
+    name: "Nguyễn Thành Lộc",
+    hoursTrained: 20,
+    userId: "12345",
+    phone: "0987654321",
+    email: "lucloc@example.com",
+  });
+
   return (
-    <ScrollView   showsVerticalScrollIndicator={false}>
+    <ScrollView showsVerticalScrollIndicator={false}>
       <Box flex={1} style={styles.container}>
-        {/* Container 1 */}
         <Box style={styles.container_item}>
           <HStack space={8}>
             <Center>
@@ -75,6 +112,7 @@ const HomeContentsScreen = () => {
                 <Button
                   w="120"
                   rightIcon={<FontAwesome6 name="right-long" size={20} />}
+                  onPress={handleCheckIn}
                 >
                   Check in
                 </Button>
@@ -87,191 +125,6 @@ const HomeContentsScreen = () => {
           </HStack>
         </Box>
 
-        {/* Container 2 */}
-        <Box h={100} w="90%" mt={5}>
-          <HStack
-            justifyContent="space-between"
-            alignItems="center"
-            w="100%"
-            space={5}
-          >
-            <Heading size="sm">Danh mục sản phẩm</Heading>
-            <Button size="sm" variant="link" colorScheme="primary">
-              Xem thêm
-            </Button>
-          </HStack>
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            marginTop={2}
-          >
-            <HStack space="3" alignItems="center">
-              <Center size="16">
-                <Button w="100%" px={0}>
-                  {/* Logo */}
-                  <VStack alignItems="center">
-                    <MaterialIcons
-                      name="self-improvement"
-                      size={24}
-                      color="#fff"
-                    />
-                    {/* Categories */}
-                    <Text color="#fff" fontSize="xs">
-                      Whey
-                    </Text>
-                  </VStack>
-                </Button>
-              </Center>
-
-              <Center size="16">
-                <Button w="100%" px={0}>
-                  {/* Logo */}
-                  <VStack alignItems="center">
-                    <MaterialCommunityIcons
-                      name="boxing-glove"
-                      size={24}
-                      color="#fff"
-                    />
-                    {/* Categories */}
-                    <Text color="#fff" fontSize="xs">
-                      Găng tay
-                    </Text>
-                  </VStack>
-                </Button>
-              </Center>
-
-              <Center size="16">
-                <Button w="100%" px={0}>
-                  {/* Logo */}
-                  <VStack alignItems="center">
-                    <FontAwesome6 name="bandage" size={24} color="#fff" />
-                    {/* Categories */}
-                    <Text color="#fff" fontSize="xs">
-                      Thắt lưng
-                    </Text>
-                  </VStack>
-                </Button>
-              </Center>
-
-              <Center size="16">
-                <Button w="100%" px={0}>
-                  {/* Logo */}
-                  <VStack alignItems="center">
-                    <FontAwesome6 name="jar" size={24} color="#fff" />
-                    {/* Categories */}
-                    <Text color="#fff" fontSize="xs">
-                      Bình lắc
-                    </Text>
-                  </VStack>
-                </Button>
-              </Center>
-
-              <Center size="16">
-                <Button w="100%" px={0}>
-                  {/* Logo */}
-                  <VStack alignItems="center">
-                    <Ionicons name="shirt-sharp" size={24} color="#fff" />
-                    {/* Categories */}
-                    <Text color="#fff" fontSize="xs">
-                      Quần áo
-                    </Text>
-                  </VStack>
-                </Button>
-              </Center>
-            </HStack>
-          </ScrollView>
-        </Box>
-        {/* Container 3 */}
-        <Divider
-          my="2"
-          _light={{
-            bg: "muted.400",
-            opacity: 0.5,
-          }}
-          _dark={{
-            bg: "muted.300",
-            opacity: 0.5,
-          }}
-          width="90%"
-        />
-        <Box style={styles.container_item_3}>
-          <HStack
-            justifyContent="space-between"
-            alignItems="center"
-            w="100%"
-            space={5}
-            mb={5}
-          >
-            <Heading size="xs">TOP HLV THÁNG</Heading>
-            <Button size="sm" variant="link" colorScheme="primary">
-              Xem thêm
-            </Button>
-          </HStack>
-          <VStack>
-            <Box style={styles.home_personal_item}>
-              <HStack space={10}>
-                <Avatar
-                  source={require("../../assets/images/avatar-trang-4.jpg")}
-                  style={styles.avt}
-                />
-                <Center>
-                  <Heading size="xs">Nguyễn Thành Lộc</Heading>
-                  <Text>20 Giờ tập</Text>
-                </Center>
-                <Center>Top 1</Center>
-              </HStack>
-            </Box>
-            <Divider
-              my="2"
-              _light={{
-                bg: "muted.400",
-                opacity: 0.5,
-              }}
-              _dark={{
-                bg: "muted.300",
-                opacity: 0.5,
-              }}
-            />
-            <Box style={styles.home_personal_item}>
-              <HStack space={10}>
-                <Avatar
-                  source={require("../../assets/images/avatar-trang-4.jpg")}
-                  style={styles.avt}
-                />
-                <Center>
-                  <Heading size="xs">Nguyễn Thành Lộc</Heading>
-                  <Text>20 Giờ tập</Text>
-                </Center>
-                <Center>Top 2</Center>
-              </HStack>
-            </Box>
-            <Divider
-              my="2"
-              _light={{
-                bg: "muted.400",
-                opacity: 0.5,
-              }}
-              _dark={{
-                bg: "muted.300",
-                opacity: 0.5,
-              }}
-            />
-            <Box style={styles.home_personal_item}>
-              <HStack space={10}>
-                <Avatar
-                  source={require("../../assets/images/avatar-trang-4.jpg")}
-                  style={styles.avt}
-                />
-                <Center>
-                  <Heading size="xs">Nguyễn Thành Lộc</Heading>
-                  <Text>20 Giờ tập</Text>
-                </Center>
-                <Center>Top 3</Center>
-              </HStack>
-            </Box>
-          </VStack>
-        </Box>
-        {/* Container 4 */}
         <View style={styles.container_item_4}>
           <HStack
             justifyContent="space-between"
@@ -282,18 +135,26 @@ const HomeContentsScreen = () => {
             pl={2}
           >
             <Heading size="xs">Sản phẩm gợi ý</Heading>
-            <Button size="sm" variant="link" colorScheme="primary" >
+            <Button size="sm" variant="link" colorScheme="primary">
               Xem thêm
             </Button>
           </HStack>
           {renderGrid(products)}
         </View>
+
+        <QRCodeModal
+          visible={isQRCodeVisible}
+          onClose={handleCloseQRCodeModal}
+          userInfo={userInfo}
+        />
       </Box>
+      <Box mb={100}></Box>
     </ScrollView>
   );
 };
 
 export default HomeContentsScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -312,36 +173,12 @@ const styles = StyleSheet.create({
     height: 100,
     width: 100,
   },
-  text: {
-    color: "black",
-  },
-  container_item_3: {
-    height: 250,
-    padding: 20,
-  },
   container_item_4: {
     width: "90%",
     marginTop: 60,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  avt: {
-    height: 50,
-    width: 50,
-  },
-  home_personal_item: {
-    paddingVertical: 5,
-  },
-  product_item: {
-    height: 200,
-    backgroundColor: "#d7e9f5ba",
-    borderRadius: 10,
-  },
-  image_Product: {
-    height: 150,
-    width: 150,
-    borderRadius: 10,
   },
   row: {
     marginBottom: 10,

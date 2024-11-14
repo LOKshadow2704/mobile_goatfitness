@@ -1,5 +1,4 @@
 import AdminAppBar from "@/components/Admin/AppBar/AppBar";
-import BackToTop from "@/components/BackToTop/BackToTop";
 import { View } from "native-base";
 import React, { ReactNode, useRef, useState } from "react";
 import { StyleSheet } from "react-native";
@@ -19,16 +18,9 @@ const ManagerLayout: React.FC<ManagerLayoutProps> = ({ children }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        ref={scrollViewRef} 
-        onScroll={handleScroll} 
-        contentContainerStyle={styles.scrollViewContent}
-      >
-        {children}
-      </ScrollView>
-      <AdminAppBar />
-      <BackToTop scrollViewRef={scrollViewRef} showButton={showButton} />
+    <View style={styles.container} px={2}>
+      {children}
+      <AdminAppBar/>
     </View>
   );
 };
@@ -37,11 +29,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f0f9ff",
-    padding: 10
-  },
-  scrollViewContent: {
-    height: '90%' // Cho phép ScrollView chiếm toàn bộ chiều cao
-  },
+  }
 });
 
 export default ManagerLayout;

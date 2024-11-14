@@ -59,7 +59,7 @@ const Cart = ({ showModal, setShowModal }: CartProps) => {
 
   useEffect(() => {
     fetchCartData();
-  }, [showModal]);
+  }, [showModal , showPaymentSelect]);
 
   useEffect(() => {
     const calculateTotalAmount = () => {

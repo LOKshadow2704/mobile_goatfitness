@@ -38,7 +38,7 @@ export const login = (username: string, password: string) => async (dispatch: Di
     await SecureStore.setItemAsync('refresh_token', response.refresh_token);
     await SecureStore.setItemAsync('phpsessid', response.phpsessid);
     await SecureStore.setItemAsync('user', JSON.stringify(user));
-
+    console.log(response)
     // Dispatch action thành công
     dispatch({
       type: authConstants.LOGIN_SUCCESS,
@@ -102,7 +102,7 @@ export const autoLogin = () => async (dispatch: Dispatch): Promise<void> => {
       console.log('Axios Error Details:', error.response);
       dispatch({
         type: authConstants.LOGIN_FAILURE,
-        payload: error.response?.data?.message || 'Failed to refresh token. Please log in again.',
+        payload: error.response?.data?.error || 'Failed to refresh token. Please log in again.',
       });
     } else if (error instanceof Error) {
       console.error('Error Message:', error.message);

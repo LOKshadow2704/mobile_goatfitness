@@ -11,7 +11,6 @@ export default function App() {
   const auth = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    console.log(auth.user)
     if (auth.user) {
       handleLogin();
     } else {
@@ -22,16 +21,15 @@ export default function App() {
   const handleLogin = () => {
     switch (auth.user?.TenVaiTro) {
       case "admin":
-        router.push("/Manager/Admin");
+        // router.push("/Manager/Admin");
         break;
       case "employee":
-        router.push("/Manager/Admin");
+        router.push("/Manager/Employee");
         break;
       case "user":
         router.push("/Home");
         break;
       default:
-        console.log("none");
         break;
     }
   };

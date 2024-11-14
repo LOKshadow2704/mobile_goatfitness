@@ -36,23 +36,23 @@ export default function Layout() {
               <Stack.Screen name="Home/tabs/HomeContents" />
                 {/* Màn hình chi tiết Gói tập */}
               <Stack.Screen name="Home/tabs/PackGym/index" />
-              <Stack.Screen name="Home/tabs/PackGym/PackGymDetail/[id]" />
-              <Stack.Screen name="Home/tabs/PackGym/PaymentSuccess" />
-              <Stack.Screen name="Home/tabs/PackGym/PaymentCancle" />
+              <Stack.Screen name="Home/tabs/PackGym/Payment" />
               {/* Màn hình chi tiết Huấn luyện viên */}
               <Stack.Screen name="Home/tabs/PersonalTrainer/index" />
               <Stack.Screen name="Home/tabs/PersonalTrainer/PersonalTrainerDetail/[id]" />
-              <Stack.Screen name="Home/tabs/PersonalTrainer/PaymentSuccess" />
-              <Stack.Screen name="Home/tabs/PersonalTrainer/PaymentCancle" />
+              <Stack.Screen name="Home/tabs/PersonalTrainer/Payment" />
                 {/* Màn hình chi tiết sản phẩm */}
               <Stack.Screen name="Home/tabs/Products/index" />
               <Stack.Screen name="Home/tabs/Products/ProductDetail/[id]" />
-              <Stack.Screen name="Home/tabs/Products/PaymentSuccess" />
-              <Stack.Screen name="Home/tabs/Products/PaymentCancle" />
+              <Stack.Screen name="Home/tabs/Products/Payment" />
+              <Stack.Screen name="Home/tabs/Products/PurchaseOrder" />
               <Stack.Screen name="Home/tabs/User" />
+
               {/* Stack Admin */}
-              <Stack.Screen name="Manager/Admin/index" />
-              <Stack.Screen name="Manager/Admin/QRScan" />
+              <Stack.Screen name="Manager/Employee/index" />
+              <Stack.Screen name="Manager/Employee/PackageGym/PackageGym" />
+              <Stack.Screen name="Manager/Employee/PackageGym/UpdatePrice" />
+              <Stack.Screen name="Manager/Employee/QRScan" />
             </Stack>
           </View>
         </NativeBaseProvider>

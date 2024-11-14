@@ -50,8 +50,8 @@ const BackToTop: React.FC<BackToTopProps> = ({ scrollViewRef, showButton }) => {
 const styles = StyleSheet.create({
   backToTopButton: {
     position: "absolute",
-    bottom: 10,
-    right: 20,
+    bottom: 100,
+    right: 10,
     borderRadius: 50,
     width: 50,
     height: 50,

@@ -1,151 +1,193 @@
+import React, { useState, useRef, useEffect } from "react";
+import { Box, Heading, HStack, Icon, Input, Text } from "native-base";
 import {
-  Box,
-  Heading,
-  HStack,
-  Icon,
-  Input,
-  Text,
-} from "native-base";
-import {
-  View,
-  StyleSheet,
-  Dimensions,
-  Image,
+  ScrollView,
+  RefreshControl,
   TouchableWithoutFeedback,
   Keyboard,
+  View,
+  StyleSheet,
   TextInput,
-  RefreshControl,
-  ScrollView,
+  Dimensions,
 } from "react-native";
-import React, { useEffect, useState, useRef } from "react";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import SwiperFlatList from "react-native-swiper-flatlist";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import PersonelTrainerItem from "@/components/PersonelTrainerItem/PersonelTrainerItem";
 import axios from "axios";
-import Constants from "expo-constants"; 
+import Constants from "expo-constants";
+import { format } from "date-fns";
+import * as SecureStore from "expo-secure-store";
+import { LinearGradient } from "expo-linear-gradient";
+import BackToTop from "@/components/BackToTop/BackToTop"; // Import component BackToTop
 
 const { width: viewportWidth } = Dimensions.get("window");
 
-interface PT {
-  IDHLV: number,
-  HoTen: string,
-  DiaChi: string,
-  Email: string,
-  SDT: string,
-  avt: string,
-  DichVu: string,
-  GiaThue: number,
-  IDKhachHang: number,
-  ChungChi: string
-}
-
-const renderGrid = (pt: PT[]) => {
-  return pt.map((item) => (
-    <HStack key={item.IDHLV} space={2} justifyContent="flex-start">
-      <PersonelTrainerItem pt={item} key={item.IDHLV} />
-    </HStack>
-  ));
-};
-
 const PersonalTrainerScreen = () => {
-  const [pts, setPts] = useState<PT[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [pts, setPts] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false); // State để quản lý nút BackToTop
+  const [errorSchedule, setErrorSchedule] = useState(false); // State kiểm tra lỗi API lịch tập
   const inputRef = useRef<TextInput>(null);
-  const slides = [
-    {
-      id: "1",
-      name: "Găng tay Aolike Gloves Pro Wrist Wrap",
-      price: 20000,
-      image: "https://i.imgur.com/vICs0bu.png",
-    },
-    {
-      id: "2",
-      name: "Găng tay Aolike Gloves Pro Wrist Wrap",
-      price: 20000,
-      image: "https://i.imgur.com/vICs0bu.png",
-    },
-    {
-      id: "3",
-      name: "Găng tay Aolike Gloves Pro Wrist Wrap",
-      price: 20000,
-      image: "https://i.imgur.com/vICs0bu.png",
-    },
-  ];
+  const scrollViewRef = useRef(null); // Ref cho ScrollView
 
-  const handleKeyboardDidHide = () => {
-    if (isFocused) {
-      // Gỡ bỏ focus khỏi Input
-      inputRef.current?.blur();
-      setIsFocused(false);
-    }
-  };
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(value);
-  };
+  // Hàm lấy dữ liệu từ API
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${Constants.expoConfig?.extra?.API_URL}/personalTrainer/all`);
-      setPts(response.data);
-    } catch (err) {
-      setError("Không thể tải sản phẩm. Vui lòng thử lại sau!");
+      const accessToken = await SecureStore.getItemAsync("access_token");
+      const phpSessId = await SecureStore.getItemAsync("phpsessid");
+
+      // Fetching PT data
+      const ptsResponse = await axios.get(
+        `${Constants.expoConfig?.extra?.API_URL}/personalTrainer/all`
+      );
+      setPts(ptsResponse.data);
+
+      // Fetching practice schedule data
+      try {
+        const schedulesResponse = await axios.get(
+          `${Constants.expoConfig?.extra?.API_URL}/personalTrainer/practiceSchedule`,
+          {
+            headers: {
+              PHPSESSID: phpSessId,
+              Authorization: `Bearer ${accessToken}`,
+              "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`,
+            },
+          }
+        );
+        setSchedules(schedulesResponse.data);
+        setErrorSchedule(false); // Reset error state nếu thành công
+      } catch (err:any) {
+        setErrorSchedule(true); // Đặt state lỗi nếu API trả lỗi
+        console.log("Lỗi khi lấy lịch tập:", err.response?.data );
+      }
+    } catch (err:any) {
+      console.error("Lỗi khi lấy dữ liệu huấn luyện viên:", err.response?.data );
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const onRefresh = () => {
     setRefreshing(true);
-    fetchProducts();
+    fetchData();
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
-      handleKeyboardDidHide
-    );
+  const getUpcomingSchedules = (schedules: any) => {
+    const now = new Date();
+    return schedules.filter((schedule: any) => {
+      const startDate = new Date(schedule.NgayDangKy);
+      return startDate > now;
+    });
+  };
 
-    return () => {
-      keyboardDidHideListener.remove();
-    };
-  }, [isFocused]);
+  const upcomingSchedules = getUpcomingSchedules(schedules);
+
+  // Hàm xử lý sự kiện cuộn (scroll) để hiển thị nút BackToTop
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setShowBackToTop(offsetY > 300); // Hiển thị nút khi cuộn xuống hơn 300px
+  };
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.container}
       nestedScrollEnabled={true}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
+      onScroll={handleScroll} // Xử lý sự kiện cuộn
+      scrollEventThrottle={16} // Cập nhật mỗi 16ms
     >
-      <SwiperFlatList
-        autoplay
-        autoplayDelay={2}
-        autoplayLoop
-        data={slides}
-        renderItem={({ item }) => (
-          <View key={item.id} style={styles.slide}>
-            <Image source={{ uri: item.image }} style={styles.image} />
-          </View>
+      <Box px={5} pt={5}>
+        <Heading fontSize="md" mb={3}>
+          Lịch Tập Sắp Tới
+        </Heading>
+        {loading ? (
+          <Text>Đang tải dữ liệu...</Text>
+        ) : errorSchedule ? (
+          <Text>Không có lịch tập sắp tới</Text> // Hiển thị thông báo lỗi nếu API lịch tập gặp sự cố
+        ) : upcomingSchedules.length > 0 ? (
+          upcomingSchedules.map((schedule: any) => (
+            <Box
+              key={schedule.IDHoaDon}
+              p={4}
+              mb={4}
+              borderRadius="12"
+              style={styles.scheduleBox} // Áp dụng hiệu ứng bóng đổ
+            >
+              <LinearGradient
+                colors={ 
+                  schedule.TrangThai === 0
+                    ? ["#FFB6B6", "#FF6666"] // Màu gradient cho trạng thái chưa thanh toán
+                    : ["#A1F5A1", "#66CC66"] // Màu gradient cho trạng thái đã thanh toán
+                }
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.gradientBox}
+              >
+                <HStack alignItems="center" space={3} mb={2}>
+                  <Icon
+                    as={<MaterialCommunityIcons name="calendar" />}
+                    size={5}
+                    color="white"
+                  />
+                  <Text color="white" fontWeight="bold" fontSize="sm">
+                    Ngày bắt đầu: {format(new Date(schedule.NgayDangKy), "Pp")}
+                  </Text>
+                </HStack>
+
+                <HStack alignItems="center" space={3} mb={2}>
+                  <Icon
+                    as={<MaterialCommunityIcons name="calendar-range" />}
+                    size={5}
+                    color="white"
+                  />
+                  <Text color="white" fontWeight="bold" fontSize="sm">
+                    Ngày hết hạn: {format(new Date(schedule.NgayHetHan), "Pp")}
+                  </Text>
+                </HStack>
+
+                <HStack alignItems="center" space={3}>
+                  <Icon
+                    as={
+                      <MaterialCommunityIcons name="checkbox-marked-circle" />
+                    }
+                    size={5}
+                    color={schedule.TrangThai === 0 ? "#FF6666" : "#66CC66"}
+                  />
+                  <Text
+                    style={styles.statusText}
+                    color="white"
+                    fontWeight="bold"
+                    fontSize="md"
+                  >
+                    Trạng thái:{" "}
+                    {schedule.TrangThai === 0
+                      ? "Chưa thanh toán"
+                      : "Đã thanh toán"}
+                  </Text>
+                </HStack>
+              </LinearGradient>
+            </Box>
+          ))
+        ) : (
+          <Text>Không có lịch tập sắp tới</Text>
         )}
-      />
+      </Box>
+
       <Box px={5}>
         <HStack justifyContent="space-between" alignItems="center">
-          <Heading fontSize="md" mb={5} backgroundColor={"red"} pt={5}>
+          <Heading fontSize="md" mb={5} pt={5}>
             Huấn luyện viên
           </Heading>
           <HStack>
@@ -163,8 +205,6 @@ const PersonalTrainerScreen = () => {
               py="2"
               px="1"
               fontSize="12"
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
               InputLeftElement={
                 <Icon
                   m="2"
@@ -178,7 +218,16 @@ const PersonalTrainerScreen = () => {
           </View>
         </TouchableWithoutFeedback>
       </Box>
-      <Box pt={5}>{renderGrid(pts)}</Box>
+
+      <Box pt={5}>
+        {pts.map((pt) => (
+          <PersonelTrainerItem pt={pt} key={pt.IDHLV} />
+        ))}
+      </Box>
+
+      {/* Thêm component BackToTop */}
+      <BackToTop scrollViewRef={scrollViewRef} showButton={showBackToTop} />
+      <Box mb={100}></Box>
     </ScrollView>
   );
 };
@@ -187,31 +236,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  slide: {
-    width: viewportWidth,
-    height: viewportWidth * 0.75,
-    justifyContent: "center",
-    alignItems: "center",
+
+  gradientBox: {
+    padding: 15,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
+  statusText: {
+    fontWeight: "bold",
+    fontSize: 14,
   },
-  paginationStyle: {
-    bottom: 10,
-  },
-  dotStyle: {
-    backgroundColor: "rgba(255,255,255,0.5)",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  activeDotStyle: {
-    backgroundColor: "#fff",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  scheduleBox: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+    borderRadius: 12,
   },
 });
 

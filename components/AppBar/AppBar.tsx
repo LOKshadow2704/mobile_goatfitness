@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     right: 0,
     flex: 1,
     backgroundColor: "#e0f2fe",
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -167,18 +167,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   activeMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: -20,
     backgroundColor: "#e0f2fe",
-    borderRadius: 20
+    borderRadius: 20,
   },
   activeIcon: {
-    fontSize: 30
+    fontSize: 30,
   },
   activeText: {
     color: "#0c4a6e",
     fontWeight: "bold",
-    fontSize: 12
+    fontSize: 12,
   },
 });
 

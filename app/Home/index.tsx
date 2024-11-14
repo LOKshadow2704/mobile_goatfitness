@@ -9,104 +9,50 @@ import PersonalTrainer from "@/screens/PersonalTrainer/PersonalTrainer";
 import BackToTop from "@/components/BackToTop/BackToTop";
 import PackGym from "@/screens/PackGym/PackGym";
 import User from "@/screens/User/User";
+import { Box } from "native-base";
 
 const FirstRoute = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [showButton, setShowButton] = useState(false);
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    setShowButton(offsetY > 300); 
+    setShowButton(offsetY > 300);
   };
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        onScroll={handleScroll}
-      >
-        <HomeContents />
-      </ScrollView>
-      <BackToTop scrollViewRef={scrollViewRef} showButton={showButton} />
+      <HomeContents />
     </View>
   );
 };
 
 const SecondRoute = () => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [showButton, setShowButton] = useState(false);
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setShowButton(offsetY > 300); 
-  };
-
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        onScroll={handleScroll}
-      >
-        <Products />
-      </ScrollView>
-      <BackToTop scrollViewRef={scrollViewRef} showButton={showButton} />
+      <Products />
     </View>
   );
 };
 
 const ThirdRoute = () => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [showButton, setShowButton] = useState(false);
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setShowButton(offsetY > 300); 
-  };
-
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        onScroll={handleScroll}
-      >
-        <PersonalTrainer />
-      </ScrollView>
-      <BackToTop scrollViewRef={scrollViewRef} showButton={showButton} />
+      <PersonalTrainer />
     </View>
   );
 };
 
 const FourthRoute = () => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [showButton, setShowButton] = useState(false);
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setShowButton(offsetY > 300);
-  };
-
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView ref={scrollViewRef} style={styles.scrollView}>
-        <PackGym />
-      </ScrollView>
-      <BackToTop scrollViewRef={scrollViewRef} showButton={showButton} />
+      <PackGym />
     </View>
   );
 };
 
 const FifthRoute = () => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [showButton, setShowButton] = useState(false);
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setShowButton(offsetY > 300);
-  };
-
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView ref={scrollViewRef} style={styles.scrollView}>
-        <User />
-      </ScrollView>
-      <BackToTop scrollViewRef={scrollViewRef} showButton={showButton} />
+      <User />
     </View>
   );
 };
@@ -140,7 +86,7 @@ const App = () => {
         renderTabBar={() => null}
         onIndexChange={setIndex}
         initialLayout={initialLayout}
-        style={{ marginTop: 70, marginBottom: 72 }}
+        style={{ marginTop: 70 }}
       />
       <AppBar setRoute={setIndex} route={index} />
     </View>

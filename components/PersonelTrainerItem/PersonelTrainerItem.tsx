@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import {
   Button,
   Heading,
@@ -7,7 +8,7 @@ import {
   View,
   VStack,
 } from "native-base";
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet } from "react-native";
 
 interface PT {
@@ -28,6 +29,15 @@ interface PersonalTrainer {
 }
 
 const PersonelTrainerItem: React.FC<PersonalTrainer> = ({ pt }) => {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const goToPTDetail = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    router.push(`Home/tabs/PersonalTrainer/PersonalTrainerDetail/${pt.IDHLV}`);
+    setTimeout(() => setIsNavigating(false), 1000);
+  };
   return (
     <View mx={5} style={styles.item} justifyContent={"center"}>
       <HStack space={2}>
@@ -40,7 +50,7 @@ const PersonelTrainerItem: React.FC<PersonalTrainer> = ({ pt }) => {
           <Text>Loại hình: {pt.DichVu}</Text>
           <Text>Giá thuê {pt.GiaThue} / giờ</Text>
         </VStack>
-        <Button>{'>'}</Button>
+        <Button onPress={goToPTDetail}>{'>'}</Button>
       </HStack>
     </View>
   );
