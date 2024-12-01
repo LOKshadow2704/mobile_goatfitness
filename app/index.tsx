@@ -21,7 +21,7 @@ export default function App() {
   const handleLogin = () => {
     switch (auth.user?.TenVaiTro) {
       case "admin":
-        // router.push("/Manager/Admin");
+        router.push("/Manager/Admin");
         break;
       case "employee":
         router.push("/Manager/Employee");

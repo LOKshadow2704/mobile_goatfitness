@@ -34,7 +34,7 @@ const HomeAdmin: React.FC<HomeAdminProps> = () => {
       const phpSessId = await SecureStore.getItemAsync("phpsessid");
 
       if (!accessToken || !phpSessId) {
-        console.error("Missing access token or PHP session ID.");
+        console.error("Không tìm thấy thông tin xác thực.");
         return;
       }
 
@@ -181,16 +181,31 @@ const HomeAdmin: React.FC<HomeAdminProps> = () => {
                 >
                   <Text style={styles.buttonText}>Quản lý Gói tập</Text>
                 </Pressable>
-                <Pressable style={styles.button}>
+                <Pressable
+                  style={styles.button}
+                  onPress={() =>
+                    router.push(`/Manager/Employee/Product/Product`)
+                  }
+                >
                   <Text style={styles.buttonText}>Quản lý Sản phẩm</Text>
                 </Pressable>
               </HStack>
               <HStack space={3} justifyContent="space-between">
-                <Pressable style={styles.button}>
+                <Pressable
+                  style={styles.button}
+                  onPress={() =>
+                    router.push(`/Manager/Employee/PurchaseOrder/PurchaseOrder`)
+                  }
+                >
                   <Text style={styles.buttonText}>Quản lý Đơn hàng</Text>
                 </Pressable>
-                <Pressable style={styles.button}>
-                  <Text style={styles.buttonText}>Xem các báo cáo</Text>
+                <Pressable
+                  style={styles.button}
+                  onPress={() =>
+                    router.push(`/Manager/Employee/Categories/Categories`)
+                  }
+                >
+                  <Text style={styles.buttonText}>Danh mục sản phẩm</Text>
                 </Pressable>
               </HStack>
             </VStack>

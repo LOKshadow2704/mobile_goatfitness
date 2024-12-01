@@ -48,11 +48,19 @@ export default function Layout() {
               <Stack.Screen name="Home/tabs/Products/PurchaseOrder" />
               <Stack.Screen name="Home/tabs/User" />
 
-              {/* Stack Admin */}
+              {/* Stack Employee */}
               <Stack.Screen name="Manager/Employee/index" />
+              <Stack.Screen name="Manager/Employee/QRScan" />
+              <Stack.Screen name="Manager/Employee/AccountInfo" />
               <Stack.Screen name="Manager/Employee/PackageGym/PackageGym" />
               <Stack.Screen name="Manager/Employee/PackageGym/UpdatePrice" />
-              <Stack.Screen name="Manager/Employee/QRScan" />
+              <Stack.Screen name="Manager/Employee/Product/Product" />
+              <Stack.Screen name="Manager/Employee/Product/ProductDetail/[id]" />
+              <Stack.Screen name="Manager/Employee/Categories/Categories" />
+              <Stack.Screen name="Manager/Employee/PurchaseOrder/PurchaseOrder" />
+              {/* Stack Admin */}
+              <Stack.Screen name="Manager/Admin/index" />
+              <Stack.Screen name="Manager/Admin/AccountInfo" />
             </Stack>
           </View>
         </NativeBaseProvider>

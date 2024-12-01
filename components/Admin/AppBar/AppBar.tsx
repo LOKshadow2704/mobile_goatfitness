@@ -35,12 +35,13 @@ export default function AdminAppBar() {
   const handleConfirmLogout = () => {
     setShowLogoutModal(false);
     onClose();
-    router.push("/");
+    router.push("/"); // Quay lại trang chủ
   };
 
   return (
     <SafeAreaView style={styles.safeAreaView}>
       <HStack space={2} justifyContent={"space-between"} px={5}>
+        {/* Logo */}
         <Box>
           <Image
             source={require("@/assets/images/logo.png")}
@@ -48,6 +49,8 @@ export default function AdminAppBar() {
             style={styles.logo}
           />
         </Box>
+
+        {/* HStack cho các icon và menu */}
         <Box>
           <HStack
             space={50}
@@ -55,9 +58,17 @@ export default function AdminAppBar() {
             h={"100%"}
             justifyContent="center"
           >
+            {/* Icon Trang chủ */}
+            <Pressable onPress={() => router.push(`/Manager/Employee`)}>
+              <FontAwesomeIcon name="home" style={styles.icon} />
+            </Pressable>
+
+            {/* Icon QR Code */}
             <Pressable onPress={() => router.push(`/Manager/Employee/QRScan`)}>
               <FontAwesomeIcon name="qrcode" style={styles.icon} />
             </Pressable>
+
+            {/* Icon Menu */}
             <Pressable onPress={onOpen}>
               <FontAwesomeIcon name="list-ul" style={styles.icon} />
             </Pressable>
@@ -68,7 +79,7 @@ export default function AdminAppBar() {
       {/* Menu Actionsheet */}
       <Actionsheet isOpen={isOpen} onClose={onClose}>
         <Actionsheet.Content>
-          <Actionsheet.Item onPress={() => console.log("Thông tin cá nhân")}>
+          <Actionsheet.Item  onPress={() => router.push(`/Manager/Employee/AccountInfo`)}>
             <HStack>
               <FontAwesomeIcon name="user" style={styles.menuIcon} />
               <Text style={styles.menuText}>Thông tin cá nhân</Text>
