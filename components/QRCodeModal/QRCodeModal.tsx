@@ -7,29 +7,26 @@ import uuid from "react-native-uuid";
 interface QRCodeModalProps {
   visible: boolean;
   onClose: () => void;
-  userInfo: string;
 }
 
 const QRCodeModal: React.FC<QRCodeModalProps> = ({
   visible,
   onClose,
-  userInfo,
 }) => {
   const [userQRCodeData, setUserQRCodeData] = useState<string>("");
 
   useEffect(() => {
-    if (visible && userInfo) {
+    if (visible) {
       try {
-        const parsedUserInfo = JSON.parse(userInfo);
         const deviceId = uuid.v4();
-        const combinedData = { ...parsedUserInfo, deviceId };
+        const combinedData = {deviceId };
         setUserQRCodeData(JSON.stringify(combinedData));
         console.log(JSON.stringify(combinedData));
       } catch (error) {
         console.error("Lỗi khi phân tích cú pháp userInfo:", error);
       }
     }
-  }, [visible, userInfo]);
+  }, [visible]);
 
   if (!userQRCodeData) {
     return null;

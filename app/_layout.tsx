@@ -58,6 +58,7 @@ export default function Layout() {
               <Stack.Screen name="Manager/Employee/Product/ProductDetail/[id]" />
               <Stack.Screen name="Manager/Employee/Categories/Categories" />
               <Stack.Screen name="Manager/Employee/PurchaseOrder/PurchaseOrder" />
+              <Stack.Screen name="Manager/Employee/WorkSchedule" />
               {/* Stack Admin */}
               <Stack.Screen name="Manager/Admin/index" />
               <Stack.Screen name="Manager/Admin/AccountInfo" />

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import * as LocalAuthentication from "expo-local-authentication";
 import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
 import {
   Box,
@@ -13,53 +12,43 @@ import {
 } from "native-base";
 import { SCREEN_WIDTH } from "@/assets/diminsons/diminsons";
 import { Image, ScrollView, StyleSheet } from "react-native";
-import ProductItem from "@/components/ProductItem/ProductItem";
+import { LinearGradient } from "expo-linear-gradient";
 import QRCodeModal from "@/components/QRCodeModal/QRCodeModal";
+import * as LocalAuthentication from "expo-local-authentication";
 
-interface Product {
-  id: string;
-  name: string;
-  image: string;
-  price: number;
-}
+// Dữ liệu quảng cáo dịch vụ và khuyến mãi
+const services = [
+  {
+    id: "1",
+    title: "Lớp Yoga cho mọi cấp độ",
+    description:
+      "Khám phá các lớp Yoga cho tất cả các cấp độ, giúp bạn cải thiện sức khỏe và tinh thần. Tham gia ngay hôm nay để cảm nhận sự khác biệt!",
+    image: "https://i.imgur.com/MzkR2X7.jpg",
+    price: "1,000,000 VND/tháng", // Tăng giá
+  },
+  {
+    id: "3",
+    title: "Lớp Zumba vui nhộn",
+    description:
+      "Tham gia lớp Zumba để vừa giảm cân vừa giải trí. Cảm nhận năng lượng và sự vui vẻ mỗi buổi học.",
+    image: "https://i.imgur.com/FvQLByj.jpg",
+    price: "800,000 VND/tháng", // Tăng giá
+  },
+  {
+    id: "4",
+    title: "Khóa học HIIT giảm mỡ hiệu quả",
+    description:
+      "Khóa học HIIT giúp bạn đốt cháy calo, giảm mỡ hiệu quả. Đừng bỏ lỡ chương trình khuyến mãi đặc biệt!",
+    image: "https://i.imgur.com/7YH5Z9z.jpg",
+    price: "1,200,000 VND/tháng", // Tăng giá
+  },
+];
 
 const HomeContentsScreen = () => {
   const [isQRCodeVisible, setQRCodeVisible] = useState(false);
   const [qrCodeTimeoutId, setQrCodeTimeoutId] = useState<NodeJS.Timeout | null>(
     null
   );
-
-  const products = [
-    {
-      id: "1",
-      name: "Găng tay Aolike Gloves Pro Wrist Wrap",
-      price: 20000,
-      image: "https://i.imgur.com/vICs0bu.png",
-    },
-    // Thêm sản phẩm khác nếu cần...
-  ];
-
-  // Hàm render grid sản phẩm
-  const renderGrid = (items: Product[]) => {
-    const rows = [];
-    for (let i = 0; i < items.length; i += 2) {
-      const pair = [items[i], items[i + 1]];
-      rows.push(
-        <HStack space={2} style={styles.row} key={`row-${i}`}>
-          {pair.map((prod, idx) =>
-            prod ? (
-              <VStack key={prod.id} style={styles.col}>
-                <ProductItem product={prod} />
-              </VStack>
-            ) : (
-              <View key={`placeholder-${i}-${idx}`} style={styles.col} />
-            )
-          )}
-        </HStack>
-      );
-    }
-    return rows;
-  };
 
   // Hàm check-in và hiển thị QR code sau khi xác thực vân tay thành công
   const handleCheckIn = async () => {
@@ -90,17 +79,10 @@ const HomeContentsScreen = () => {
     }
   };
 
-  const userInfo = JSON.stringify({
-    name: "Nguyễn Thành Lộc",
-    hoursTrained: 20,
-    userId: "12345",
-    phone: "0987654321",
-    email: "lucloc@example.com",
-  });
-
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
       <Box flex={1} style={styles.container}>
+        {/* Phần Luyện tập thôi vẫn giữ nguyên */}
         <Box style={styles.container_item}>
           <HStack space={8}>
             <Center>
@@ -125,6 +107,26 @@ const HomeContentsScreen = () => {
           </HStack>
         </Box>
 
+        {/* Khuyến mãi với LinearGradient */}
+        <LinearGradient
+          colors={["#1f2a44", "#4a6ea6"]} // Gradient xanh đen đến xanh dương
+          style={styles.promotionBox}
+        >
+          <Heading size="sm" color="white" mb={2}>
+            Khuyến mãi đặc biệt
+          </Heading>
+          <Text color="white" mb={3}>
+            - Giảm giá lên đến 10% cho tất cả sản phẩm!
+          </Text>
+          <Text color="white" mb={3}>
+            - Gói tập đăng ký càng nhiều, tiết kiệm càng lớn!
+          </Text>
+          <Text color="white" fontWeight="bold">
+            Đừng bỏ lỡ cơ hội này! Hãy đăng ký ngay hôm nay!
+          </Text>
+        </LinearGradient>
+
+        {/* Quảng cáo dịch vụ */}
         <View style={styles.container_item_4}>
           <HStack
             justifyContent="space-between"
@@ -134,20 +136,39 @@ const HomeContentsScreen = () => {
             mb={5}
             pl={2}
           >
-            <Heading size="xs">Sản phẩm gợi ý</Heading>
+            <Heading size="xs">Dịch vụ nổi bật</Heading>
             <Button size="sm" variant="link" colorScheme="primary">
               Xem thêm
             </Button>
           </HStack>
-          {renderGrid(products)}
+          {services.map((service) => (
+            <Box
+              key={service.id}
+              p={4}
+              mb={3}
+              borderRadius="md"
+              bg="gray.100"
+              shadow={1}
+            >
+              <Image
+                source={{ uri: service.image }}
+                style={{ width: "100%", height: 150, borderRadius: 10 }}
+              />
+              <Text fontWeight="bold" color="blue.600" mt={3}>
+                {service.title}
+              </Text>
+              <Text color="gray.700">{service.description}</Text>
+              <Text fontWeight="bold" color="green.600" mt={2}>
+                {service.price}
+              </Text>
+              <Text color="blue.700" mt={2}>
+                Liên hệ đăng ký: <Text fontWeight="bold">0328058832</Text>
+              </Text>
+            </Box>
+          ))}
         </View>
-
-        <QRCodeModal
-          visible={isQRCodeVisible}
-          onClose={handleCloseQRCodeModal}
-          userInfo={userInfo}
-        />
       </Box>
+      <QRCodeModal visible={isQRCodeVisible} onClose={handleCloseQRCodeModal} />
       <Box mb={100}></Box>
     </ScrollView>
   );
@@ -180,10 +201,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  row: {
-    marginBottom: 10,
-  },
-  col: {
-    flex: 1,
+  promotionBox: {
+    width: "90%",
+    marginTop: 20,
+    padding: 15,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
 });

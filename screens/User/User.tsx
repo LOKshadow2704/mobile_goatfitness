@@ -1,6 +1,4 @@
-import { userLogout } from "@/redux/actions/authActions";
-import axios from "axios";
-import { useRouter } from "expo-router";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Box,
   Button,
@@ -8,33 +6,34 @@ import {
   Image,
   Input,
   Text,
-  View,
   VStack,
   Modal,
-  Center,
 } from "native-base";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Keyboard, RefreshControl, StyleSheet } from "react-native";
 import { useDispatch } from "react-redux";
+import { useRouter } from "expo-router";
+import { Keyboard, RefreshControl, ScrollView, StyleSheet } from "react-native";
+import axios from "axios";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import ChangePasswordModal from "@/components/ChangePasswordModal/ChangePasswordModal";
-import { ScrollView } from "react-native-gesture-handler";
+import { userLogout } from "@/redux/actions/authActions";
+import PersonalTrainerSchedule from "@/components/PersonalTrainerSchedule/PersonalTrainerSchedule";
 
-const UserScreen = () => {
+const UserScreen: React.FC = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const inputRef = useRef(null);
-  const route = useRouter();
-  const dispatch = useDispatch();
+  const [showTrainerScheduleModal, setShowTrainerScheduleModal] =
+    useState(false);
   const [userData, setUserData] = useState<any>({});
   const [originalData, setOriginalData] = useState<any>({});
+  const inputRef = useRef(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const route = useRouter();
+  const dispatch = useDispatch();
 
   const handleKeyboardDidHide = () => {
     if (isFocused) {
@@ -129,15 +128,12 @@ const UserScreen = () => {
       console.error("Lỗi khi lấy thông tin người dùng:", error);
     }
   };
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchUserInfo();
     setRefreshing(false);
   }, []);
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setShowBackToTop(offsetY > 300);
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -166,9 +162,6 @@ const UserScreen = () => {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
-      
     >
       <Box width="100%" alignItems="flex-start" paddingY={2}>
         <Heading size="md" textAlign="left">
@@ -186,13 +179,24 @@ const UserScreen = () => {
         {userData.HoTen || "Tên người dùng"}
       </Heading>
 
+      {userData.IDHLV && (
+        <Box w="100%" bg="blue.100" p={4} borderRadius="md">
+          <Text fontWeight="bold" color="blue.600">
+            Huấn luyện viên - Personal Trainer
+          </Text>
+          <Button
+            mt={2}
+            colorScheme="blue"
+            onPress={() => setShowTrainerScheduleModal(true)}
+          >
+            Xem lịch tập
+          </Button>
+        </Box>
+      )}
+
       <VStack w={"100%"} space={4}>
         {[
-          {
-            label: "Số điện thoại:",
-            field: "SDT",
-            placeholder: "Nhập số điện thoại",
-          },
+          { label: "Số điện thoại:", field: "SDT", placeholder: "Nhập số điện thoại" },
           { label: "Email:", field: "Email", placeholder: "Nhập email" },
           { label: "Địa chỉ:", field: "DiaChi", placeholder: "Nhập địa chỉ" },
         ].map(({ label, field, placeholder }) => (
@@ -213,7 +217,6 @@ const UserScreen = () => {
             />
           </Box>
         ))}
-
         <Button onPress={handleUpdate}>Cập nhật thông tin</Button>
         <Button onPress={() => setShowChangePasswordModal(true)}>
           Đổi mật khẩu
@@ -223,66 +226,52 @@ const UserScreen = () => {
         </Button>
       </VStack>
 
-      {/* Modal xác nhận đăng xuất */}
-      <Center>
-        <Modal
-          isOpen={showLogoutModal}
-          onClose={() => setShowLogoutModal(false)}
-        >
-          <Modal.Content maxWidth="400px">
-            <Modal.CloseButton />
-            <Modal.Header>Đăng xuất</Modal.Header>
-            <Modal.Body>
-              <Text>Bạn có chắc chắn muốn đăng xuất không?</Text>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button.Group space={2}>
-                <Button
-                  variant="ghost"
-                  colorScheme="blueGray"
-                  onPress={() => setShowLogoutModal(false)}
-                >
-                  Hủy
-                </Button>
-                <Button colorScheme="danger" onPress={handleConfirmLogout}>
-                  Đăng xuất
-                </Button>
-              </Button.Group>
-            </Modal.Footer>
-          </Modal.Content>
-        </Modal>
-      </Center>
+      {/* Modals */}
+      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)}>
+        <Modal.Content>
+          <Modal.CloseButton />
+          <Modal.Header>Đăng xuất</Modal.Header>
+          <Modal.Body>
+            <Text>Bạn có chắc chắn muốn đăng xuất không?</Text>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button.Group>
+              <Button onPress={() => setShowLogoutModal(false)}>Hủy</Button>
+              <Button onPress={handleConfirmLogout} colorScheme="danger">
+                Đăng xuất
+              </Button>
+            </Button.Group>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
 
-      {/* Modal thông báo kết quả cập nhật */}
-      <Center>
-        <Modal
-          isOpen={showUpdateModal}
-          onClose={() => setShowUpdateModal(false)}
-        >
-          <Modal.Content maxWidth="400px">
-            <Modal.CloseButton />
-            <Modal.Header>Kết quả cập nhật</Modal.Header>
-            <Modal.Body>
-              <Text>{updateMessage}</Text>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button onPress={() => setShowUpdateModal(false)}>OK</Button>
-            </Modal.Footer>
-          </Modal.Content>
-        </Modal>
-      </Center>
+      <Modal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)}>
+        <Modal.Content>
+          <Modal.CloseButton />
+          <Modal.Header>Kết quả cập nhật</Modal.Header>
+          <Modal.Body>
+            <Text>{updateMessage}</Text>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onPress={() => setShowUpdateModal(false)}>OK</Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
 
-      {/* Modal đổi mật khẩu */}
       <ChangePasswordModal
         isOpen={showChangePasswordModal}
         onClose={() => setShowChangePasswordModal(false)}
         onChangePassword={(oldPassword, newPassword) => {
           console.log("Mật khẩu cũ:", oldPassword);
           console.log("Mật khẩu mới:", newPassword);
-          // Xử lý thay đổi mật khẩu tại đây
         }}
       />
-      <Box mb={100}></Box>
+
+      <PersonalTrainerSchedule
+        isOpen={showTrainerScheduleModal}
+        onClose={() => setShowTrainerScheduleModal(false)}
+      />
+      <Box pb={100}></Box>
     </ScrollView>
   );
 };
@@ -290,21 +279,21 @@ const UserScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
+    backgroundColor: "#fff",
   },
   avt_box: {
-    height: 100,
-    width: 100,
-    borderRadius: 50,
-    overflow: "hidden",
-    marginTop: 16,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 20,
   },
   image: {
-    height: "100%",
-    width: "100%",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   input_background: {
-    backgroundColor: "white",
+    backgroundColor: "#f5f5f5",
   },
 });
 

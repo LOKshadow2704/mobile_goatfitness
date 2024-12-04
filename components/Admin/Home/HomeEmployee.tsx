@@ -1,17 +1,6 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
-import {
-  Box,
-  Heading,
-  HStack,
-  ScrollView,
-  Text,
-  View,
-  VStack,
-  Spinner,
-} from "native-base";
+import React, { useState, useCallback, useEffect } from "react";
+import { Box, Heading, HStack, ScrollView, Text, View, VStack, Spinner } from "native-base";
 import { Pressable, StyleSheet, RefreshControl } from "react-native";
-import { BarChart } from "react-native-gifted-charts";
-import { DashboardData, processDataForCharts } from "./data";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import Constants from "expo-constants";
@@ -24,9 +13,10 @@ const HomeAdmin: React.FC<HomeAdminProps> = () => {
   const [customerStackData, setCustomerStackData] = useState<any[]>([]);
   const [orderStackData, setOrderStackData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [totalUnprocessedOrders, setTotalUnprocessedOrders] = useState<number>(0); // Biến lưu tổng số đơn hàng chưa xử lý
   const router = useRouter();
 
-  // Hàm lấy dữ liệu từ API
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -49,22 +39,60 @@ const HomeAdmin: React.FC<HomeAdminProps> = () => {
         }
       );
 
-      const data: DashboardData = response.data;
-      const processedData = processDataForCharts(data);
-      setCustomerStackData(processedData.customerStackData);
-      setOrderStackData(processedData.orderStackData);
+      const data = response.data;
+
+      // Lọc và sắp xếp khách hàng check-in theo ngày
+      const customerCountByDate = data.checkin.reduce((acc: any, entry: any) => {
+        const date = entry.ThoiGian;
+        if (!acc[date]) acc[date] = { checkIn: 0, checkOut: 0 };
+        if (entry.CheckOut === 1) acc[date].checkOut += 1;
+        else acc[date].checkIn += 1;
+        return acc;
+      }, {});
+
+      // Sắp xếp theo ngày
+      const sortedCustomerData = Object.keys(customerCountByDate)
+        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        .map((date) => ({
+          date,
+          ...customerCountByDate[date],
+        }));
+      setCustomerStackData(sortedCustomerData);
+
+      // Tính tổng doanh thu
+      const totalRevenue = data.orders.reduce((total: number, order: any) => total + order.ThanhTien, 0);
+      setTotalRevenue(totalRevenue);
+
+      // Lọc và sắp xếp đơn hàng theo ngày
+      const orderCountByDate = data.orders.reduce((acc: any, order: any) => {
+        const date = order.NgayDat;
+        if (!acc[date]) acc[date] = { processed: 0, unprocessed: 0 };
+        if (order.TrangThai === "Chưa xác nhận") acc[date].unprocessed += 1;
+        else acc[date].processed += 1;
+        return acc;
+      }, {});
+
+      // Sắp xếp theo ngày
+      const sortedOrderData = Object.keys(orderCountByDate)
+        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        .map((date) => ({
+          date,
+          ...orderCountByDate[date],
+        }));
+      setOrderStackData(sortedOrderData);
+
+      // Tính tổng đơn hàng chưa xác nhận
+      const totalUnprocessed = sortedOrderData.reduce((total: number, data) => total + data.unprocessed, 0);
+      setTotalUnprocessedOrders(totalUnprocessed);
+
     } catch (error: any) {
-      console.error(
-        "Error fetching data:",
-        error.response?.data || error.message
-      );
+      console.error("Error fetching data:", error.response?.data || error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // Hàm refresh dữ liệu
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
@@ -73,22 +101,6 @@ const HomeAdmin: React.FC<HomeAdminProps> = () => {
   useEffect(() => {
     fetchData();
   }, []);
-
-  // Render label cho từng cột stack
-  const renderStackLabel = (value: number) => (
-    <Text
-      style={{ fontSize: 10, color: "#000", position: "absolute", top: -15 }}
-    >
-      {value}
-    </Text>
-  );
-
-  // Chỉ tính toán lại dữ liệu khi cần thiết (tối ưu hóa rerender)
-  const customerStackDataMemo = useMemo(
-    () => customerStackData,
-    [customerStackData]
-  );
-  const orderStackDataMemo = useMemo(() => orderStackData, [orderStackData]);
 
   if (loading && !refreshing) {
     return (
@@ -101,117 +113,86 @@ const HomeAdmin: React.FC<HomeAdminProps> = () => {
   return (
     <View style={styles.container}>
       <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <VStack space={2}>
+          {/* Header */}
           <Box p={4} bg="white" borderRadius={12} shadow={3} mt={4} mb={5}>
-            <VStack space={20} pb={5}>
-              {/* Biểu đồ khách hàng */}
-              <Box width="100%" height={180}>
-                <Heading size="xs" mb={2}>
-                  Khách Hàng Tập Hằng Ngày
-                </Heading>
-                <BarChart
-                  width={300}
-                  rotateLabel={false}
-                  noOfSections={5}
-                  stackData={customerStackDataMemo}
-                  isAnimated
-                  animationDuration={1500}
-                  height={120}
-                  renderStackLabel={renderStackLabel}
-                />
-                <HStack space={4} mt={2} justifyContent="center">
-                  <HStack alignItems="center" space={1}>
-                    <Box width={3} height={3} bg="#FF6384" borderRadius={2} />
-                    <Text fontSize={12}>Khách đã check-out</Text>
-                  </HStack>
-                  <HStack alignItems="center" space={1}>
-                    <Box width={3} height={3} bg="#4ABFF4" borderRadius={2} />
-                    <Text fontSize={12}>Khách chưa check-out</Text>
-                  </HStack>
-                </HStack>
-              </Box>
-
-              <HStack space={4} justifyContent="space-between">
-                {/* Biểu đồ tổng đơn hàng */}
-                <Box width="100%" height={180}>
-                  <Heading size="xs" mb={2}>
-                    Tổng Đơn Hàng Hôm Nay
-                  </Heading>
-                  <BarChart
-                    width={320}
-                    rotateLabel={false}
-                    noOfSections={5}
-                    stackData={orderStackDataMemo}
-                    isAnimated
-                    animationDuration={1500}
-                    height={120}
-                    renderStackLabel={renderStackLabel}
-                  />
-                  <HStack space={4} mt={2} justifyContent="center">
-                    <HStack alignItems="center" space={1}>
-                      <Box width={3} height={3} bg="#FF6384" borderRadius={2} />
-                      <Text fontSize={12}>Đơn hàng đã xử lý</Text>
-                    </HStack>
-                    <HStack alignItems="center" space={1}>
-                      <Box width={3} height={3} bg="#36A2EB" borderRadius={2} />
-                      <Text fontSize={12}>Đơn hàng mới</Text>
-                    </HStack>
-                  </HStack>
-                </Box>
-              </HStack>
+            <Heading size="lg">Dashboard</Heading>
+            <VStack space={4} justifyContent="space-between" mt={3}>
+              <Text>Tổng khách đã check-in: {customerStackData.reduce((acc, data) => acc + data.checkIn, 0)}</Text>
+              <Text>Tổng doanh thu: {totalRevenue.toLocaleString()} VND</Text>
             </VStack>
           </Box>
 
+          {/* Hiển thị dữ liệu khách hàng check-in */}
+          <Box p={4} bg="white" borderRadius={12} shadow={3}>
+            <Heading size="xs" mb={2}>Khách hàng check-in theo ngày</Heading>
+            <VStack space={2}>
+              {customerStackData.map((data, index) => (
+                <Box key={index} p={3} bg="#f0f9ff" borderRadius={8} shadow={2}>
+                  <HStack space={4} justifyContent="space-between">
+                    <Text>{data.date}</Text>
+                    <Text>Check-in: {data.checkIn}</Text>
+                    <Text>Check-out: {data.checkOut}</Text>
+                  </HStack>
+                </Box>
+              ))}
+            </VStack>
+          </Box>
+
+          {/* Hiển thị dữ liệu đơn hàng */}
+          <Box p={4} bg="white" borderRadius={12} shadow={3} mt={5}>
+            <Heading size="xs" mb={2}>Đơn hàng theo ngày</Heading>
+            <VStack space={2}>
+              {orderStackData.map((data, index) => (
+                <Box key={index} p={3} bg="#f0f9ff" borderRadius={8} shadow={2}>
+                  <HStack space={4} justifyContent="space-between">
+                    <Text>{data.date}</Text>
+                    <VStack>
+                      <Text>Đơn hàng chưa xác nhận: {data.unprocessed}</Text>
+                      <Text>Đơn hàng đã xác nhận: {data.processed}</Text>
+                    </VStack>
+                  </HStack>
+                </Box>
+              ))}
+            </VStack>
+            {/* Hiển thị tổng đơn hàng chưa xử lý */}
+            <Box p={3} bg="#e3f2fd" borderRadius={8} mt={4}>
+              <HStack justifyContent="space-between">
+                <Text fontWeight="bold">Tổng đơn hàng chưa xử lý:</Text>
+                <Text>{totalUnprocessedOrders}</Text>
+              </HStack>
+            </Box>
+          </Box>
+
           {/* Các chức năng quản lý */}
-          <Box p={4} bg="white" borderRadius={12} shadow={3} mt={4}>
-            <Heading size="sm" mb={3}>
-              Các chức năng quản lý
-            </Heading>
+          <Box p={4} bg="white" borderRadius={12} shadow={3} mt={5}>
+            <Heading size="sm" mb={3}>Các chức năng quản lý</Heading>
             <VStack space={3}>
               <HStack space={3} justifyContent="space-between">
-                <Pressable
-                  style={styles.button}
-                  onPress={() =>
-                    router.push(`/Manager/Employee/PackageGym/PackageGym`)
-                  }
-                >
+                <Pressable style={styles.button} onPress={() => router.push("/Manager/Employee/PackageGym/PackageGym")}>
                   <Text style={styles.buttonText}>Quản lý Gói tập</Text>
                 </Pressable>
-                <Pressable
-                  style={styles.button}
-                  onPress={() =>
-                    router.push(`/Manager/Employee/Product/Product`)
-                  }
-                >
+                <Pressable style={styles.button} onPress={() => router.push("/Manager/Employee/Product/Product")}>
                   <Text style={styles.buttonText}>Quản lý Sản phẩm</Text>
                 </Pressable>
               </HStack>
               <HStack space={3} justifyContent="space-between">
-                <Pressable
-                  style={styles.button}
-                  onPress={() =>
-                    router.push(`/Manager/Employee/PurchaseOrder/PurchaseOrder`)
-                  }
-                >
+                <Pressable style={styles.button} onPress={() => router.push("/Manager/Employee/PurchaseOrder/PurchaseOrder")}>
                   <Text style={styles.buttonText}>Quản lý Đơn hàng</Text>
                 </Pressable>
-                <Pressable
-                  style={styles.button}
-                  onPress={() =>
-                    router.push(`/Manager/Employee/Categories/Categories`)
-                  }
-                >
-                  <Text style={styles.buttonText}>Danh mục sản phẩm</Text>
+                <Pressable style={styles.button} onPress={() => router.push("/Manager/Employee/Categories/Categories")}>
+                  <Text style={styles.buttonText}>Danh mục SP</Text>
                 </Pressable>
               </HStack>
+              <Pressable style={styles.button} onPress={() => router.push("/Manager/Employee/WorkSchedule")}>
+                  <Text style={styles.buttonText}>Lịch làm việc</Text>
+                </Pressable>
             </VStack>
           </Box>
         </VStack>
-        <Box pb={100}></Box>
+        <Box pb={70}></Box>
       </ScrollView>
     </View>
   );
@@ -221,22 +202,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f0f9ff",
-    paddingTop: 20,
-    justifyContent: "center",
-    alignItems: "center",
+    padding: 10,
   },
   button: {
+    backgroundColor: "#4caf50",
+    padding: 10,
+    borderRadius: 8,
     flex: 1,
-    padding: 12,
-    backgroundColor: "#081158",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    height: 40
   },
   buttonText: {
-    fontSize: 13,
     color: "#fff",
     fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

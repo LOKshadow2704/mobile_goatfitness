@@ -127,7 +127,7 @@ const HomeAdminScreen: React.FC = () => {
             </Button>
             <Button
               colorScheme="orange"
-              onPress={() => router.push("/manage-trainers")}
+              onPress={() => router.push("/Manager/Admin/PersonalTrainer/PersonalTrainer")}
             >
               Quản lý PT
             </Button>

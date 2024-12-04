@@ -25,6 +25,10 @@ export interface DashboardData {
 
 // Hàm xử lý dữ liệu từ API
 export const processDataForCharts = (data: DashboardData) => {
+  if (!data || !data.checkin || !data.orders) {
+    return { customerStackData: [], orderStackData: [] };  // Trả về giá trị mặc định nếu dữ liệu không hợp lệ
+  }
+
   // Xử lý dữ liệu check-in: phân loại theo ngày và check-out
   const customerCountByDate: { [key: string]: { checkIn: number; checkOut: number } } = {};
 
@@ -56,7 +60,6 @@ export const processDataForCharts = (data: DashboardData) => {
 
   // Cách tính bước tăng cho cột Y: xác định giá trị lớn nhất
   const maxCustomerCount = Math.max(totalCheckIn, totalCheckOut);
-
 
   // Biểu đồ khách hàng (cột y sẽ là số nguyên và tăng đều)
   const customerStackData = Object.keys(customerCountByDate).map((date) => {
@@ -95,7 +98,6 @@ export const processDataForCharts = (data: DashboardData) => {
     totalProcessed += processed;
     totalUnprocessed += unprocessed;
   });
-
 
   // Biểu đồ đơn hàng
   const orderStackData = Object.keys(orderCountByDate).map((date) => {
