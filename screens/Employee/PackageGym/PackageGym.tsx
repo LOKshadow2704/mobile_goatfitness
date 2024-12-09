@@ -1,68 +1,45 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
-  View,
+  Box,
+  Heading,
+  HStack,
+  ScrollView,
   Text,
-  TextInput,
-  FlatList,
-  Image,
-  StyleSheet,
-  RefreshControl,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
-import { PieChart } from "react-native-gifted-charts";
-import axios from "axios";
+  View,
+  VStack,
+  Spinner,
+  Badge,
+} from "native-base";
+import { Pressable, StyleSheet, RefreshControl } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import axios from "axios";
 import Constants from "expo-constants";
-import { MaterialIcons } from "@expo/vector-icons";
-import { processDataForChart } from "./data";
-import { LinearGradient } from "expo-linear-gradient";
-import ConfirmPaymentModal from "@/components/Admin/ConfirmPaymentModal/ConfirmPaymentModal";
-import RegisterPackageModal from "@/components/Admin/RegisterPackageModal/RegisterPackageModal";
-import { Button } from "native-base";
 import { useRouter } from "expo-router";
 
-interface User {
-  TenDangNhap: string;
-  HoTen: string;
-  DiaChi: string;
-  Email: string;
-  SDT: string;
-  avt: string;
-  IDHoaDon: number | null;
-  NgayDangKy: string | null;
-  NgayHetHan: string | null;
-  TrangThaiThanhToan: string | null;
-}
-
-const PackageGymScreen = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
-  const [showRegisterPackageModal, setShowRegisterPackageModal] =
-    useState(false);
-  const [selectedSDT, setSelectedSDT] = useState<string | null>(null);
-  const [selectedIDHoaDon, setSelectedIDHoaDon] = useState<number | null>(null);
+const HomeAdmin: React.FC = () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [customerStackData, setCustomerStackData] = useState<any[]>([]);
+  const [orderStackData, setOrderStackData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalUnprocessedOrders, setTotalUnprocessedOrders] = useState(0);
 
   const router = useRouter();
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
+
       const accessToken = await SecureStore.getItemAsync("access_token");
       const phpSessId = await SecureStore.getItemAsync("phpsessid");
 
       if (!accessToken || !phpSessId) {
-        console.error("Thiếu mã truy cập hoặc PHP session ID.");
+        console.error("Không tìm thấy thông tin xác thực.");
         return;
       }
 
       const response = await axios.get(
-        `${Constants.expoConfig?.extra?.API_URL}/employee/user/gympack`,
+        `${Constants.expoConfig?.extra?.API_URL}/employee/dashboard`,
         {
           headers: {
             PHPSESSID: phpSessId,
@@ -71,244 +48,252 @@ const PackageGymScreen = () => {
           },
         }
       );
-      setUsers(response.data);
-      setFilteredUsers(response.data);
-      const data_chart: any = processDataForChart(response.data);
-      setChartData(data_chart);
+
+      const data = response.data;
+
+      // Xử lý dữ liệu khách hàng check-in
+      const checkinData = data.checkin || [];
+      const customerCountByDate = checkinData.reduce((acc: any, entry: any) => {
+        const date = entry.ThoiGian.split(" ")[0];  // Chỉ lấy phần ngày
+        if (!acc[date]) acc[date] = { checkIn: 0, checkOut: 0 };
+
+        // Tính số lần check-in và check-out
+        if (entry.CheckOut === 1) acc[date].checkOut += 1;  // Nếu có check-out
+        else acc[date].checkIn += 1;  // Nếu không có check-out (check-in)
+        return acc;
+      }, {});
+
+      // Chuyển đổi thành mảng và sắp xếp theo ngày
+      const sortedCustomerData = Object.keys(customerCountByDate)
+        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        .map((date) => ({
+          date,
+          totalCheckIn: customerCountByDate[date].checkIn,
+          totalCheckOut: customerCountByDate[date].checkOut,
+          totalCheckInCheckOut: customerCountByDate[date].checkIn + customerCountByDate[date].checkOut,  // Tổng check-in và check-out
+        }));
+      setCustomerStackData(sortedCustomerData);
+
+      // Xử lý doanh thu và đơn hàng
+      const ordersData = data.orders || [];
+      const totalRevenue = ordersData.reduce(
+        (total: number, order: any) => total + order.ThanhTien,
+        0
+      );
+      setTotalRevenue(totalRevenue);
+
+      const orderCountByDate = ordersData.reduce((acc: any, order: any) => {
+        const date = order.NgayDat.split(" ")[0];  // Chỉ lấy phần ngày
+        if (!acc[date]) acc[date] = { processed: 0, unprocessed: 0 };
+        if (order.TrangThai === "Chưa xác nhận") acc[date].unprocessed += 1;
+        else acc[date].processed += 1;
+        return acc;
+      }, {});
+
+      const sortedOrderData = Object.keys(orderCountByDate)
+        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        .map((date) => ({
+          date,
+          ...orderCountByDate[date],
+        }));
+      setOrderStackData(sortedOrderData);
+
+      const totalUnprocessed = sortedOrderData.reduce(
+        (total: number, data) => total + data.unprocessed,
+        0
+      );
+      setTotalUnprocessedOrders(totalUnprocessed);
     } catch (error: any) {
-      console.error("Lỗi khi lấy dữ liệu người dùng:", error.response?.data);
+      console.error(
+        "Error fetching data:",
+        error.response?.data || error.message
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchUsers();
-  };
-
-  const handleConfirmPayment = () => {
-    setShowConfirmPaymentModal(false);
-  };
-
-  const handleRegisterPackage = () => {
-    setShowRegisterPackageModal(false);
-  };
+    fetchData();
+  }, []);
 
   useEffect(() => {
-    const filtered = users.filter(
-      (user) =>
-        user.HoTen.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.SDT.includes(searchQuery)
-    );
-    setFilteredUsers(filtered);
-  }, [searchQuery, users]);
+    fetchData();
+  }, []);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [showRegisterPackageModal, showConfirmPaymentModal]);
-
-  if (loading) {
+  if (loading && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={styles.container}>
+        <Spinner color="blue.500" size="lg" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, padding: 10, marginBottom: 100 }}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <MaterialIcons name="exit-to-app" size={20} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Quản lý Gói Tập Gym</Text>
-      </View>
-
-      <View style={styles.chartContainer}>
-        <PieChart
-          data={chartData}
-          radius={70}
-          isAnimated
-          animationDuration={1000}
-          showText
-          textColor="black"
-          showValuesAsLabels
-          textSize={10}
-          fontWeight="bold"
-          strokeWidth={1}
-          focusOnPress
-        />
-        <View style={styles.chartLegend}>
-          {chartData.map((item, index) => (
-            <View key={index} style={styles.legendItem}>
-              <View
-                style={[styles.legendColor, { backgroundColor: item.color }]}
-              />
-              <Text style={styles.legendLabel}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <TextInput
-        placeholder="Tìm kiếm theo tên hoặc số điện thoại"
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        style={styles.searchInput}
-      />
-      <Button
-        onPress={() => router.push(`/Manager/Employee/PackageGym/UpdatePrice`)}
-        mb={2}
-      >
-        Cập nhật giá gói tập
-      </Button>
-
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.TenDangNhap}
-        renderItem={({ item }) => {
-          let colors = ["#FFCCCC", "#FF7777"];
-          if (
-            item.IDHoaDon !== null &&
-            item.TrangThaiThanhToan === "Đã Thanh Toán"
-          ) {
-            colors = ["#36A2EB", "#1E88E5"];
-          } else if (
-            item.IDHoaDon !== null &&
-            item.TrangThaiThanhToan !== "Đã Thanh Toán"
-          ) {
-            colors = ["#A5D6A7", "#66BB6A"];
-          }
-
-          return (
-            <TouchableOpacity
-              onPress={() => {
-                if (item.IDHoaDon === null) {
-                  setSelectedSDT(item.SDT);
-                  setSelectedIDHoaDon(item.IDHoaDon);
-                  setShowRegisterPackageModal(true);
-                } else if (item.TrangThaiThanhToan === "Chưa Thanh Toán") {
-                  setSelectedSDT(item.SDT);
-                  setSelectedIDHoaDon(item.IDHoaDon);
-                  setShowConfirmPaymentModal(true);
-                }
-              }}
-            >
-              <LinearGradient colors={colors} style={styles.userItem}>
-                <Image source={{ uri: item.avt }} style={styles.avatar} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-                    {item.HoTen} - {item.SDT}
-                  </Text>
-                  <Text style={{ fontSize: 14 }}>{item.DiaChi}</Text>
-                  <Text style={{ fontSize: 14 }}>{item.Email}</Text>
-                  <Text
-                    style={{ fontSize: 14, fontWeight: "bold", color: "black" }}
-                  >
-                    {item.IDHoaDon !== null
-                      ? item.TrangThaiThanhToan === "Đã Thanh Toán"
-                        ? "Đã có gói tập"
-                        : "Chưa thanh toán"
-                      : "Chưa có gói tập"}
-                  </Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        }}
+    <View style={styles.container}>
+      <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      />
+      >
+        <VStack space={4}>
+          {/* Header */}
+          <Box p={4} bg="#e3f2fd" borderRadius={12} shadow={3} mt={4}>
+            <Heading size="lg" color="#0d47a1">
+              Dashboard
+            </Heading>
+            <VStack space={4} mt={3}>
+              <HStack justifyContent="space-between">
+                <Text fontWeight="bold" color="#1e88e5">
+                  Tổng khách đã check-in:
+                </Text>
+                <Badge colorScheme="blue" borderRadius={8} fontSize="xl">
+                  {customerStackData.reduce(
+                    (acc, data) => acc + (data.totalCheckInCheckOut || 0),
+                    0
+                  )}
+                </Badge>
+              </HStack>
+              <HStack justifyContent="space-between">
+                <Text fontWeight="bold" color="#1e88e5">
+                  Tổng doanh thu:
+                </Text>
+                <Text color="#2e7d32" fontWeight="bold" fontSize="lg">
+                  {totalRevenue.toLocaleString()} VND
+                </Text>
+              </HStack>
+            </VStack>
+          </Box>
 
-      <ConfirmPaymentModal
-        visible={showConfirmPaymentModal}
-        onClose={() => setShowConfirmPaymentModal(false)}
-        onConfirm={handleConfirmPayment}
-        IDHoaDon={selectedIDHoaDon}
-      />
-      <RegisterPackageModal
-        visible={showRegisterPackageModal}
-        onClose={() => setShowRegisterPackageModal(false)}
-        onRegister={handleRegisterPackage}
-        SDT={selectedSDT}
-      />
+          {/* Dữ liệu khách hàng check-in */}
+          <Box p={4} bg="white" borderRadius={12} shadow={3}>
+            <Heading size="sm" mb={3} color="#0d47a1">
+              Khách hàng check-in theo ngày
+            </Heading>
+            <VStack space={3}>
+              {customerStackData.length === 0 ? (
+                <Text>Không có dữ liệu khách hàng check-in.</Text>
+              ) : (
+                customerStackData.map((data, index) => (
+                  <Box
+                    key={index}
+                    p={3}
+                    bg="#f0f9ff"
+                    borderRadius={8}
+                    shadow={2}
+                  >
+                    <HStack justifyContent="space-between">
+                      <Text color="#1565c0">{data.date}</Text>
+                      <Text>
+                       Check-in: {data.totalCheckIn}, Check-out: {data.totalCheckOut}
+                      </Text>
+                    </HStack>
+                  </Box>
+                ))
+              )}
+            </VStack>
+          </Box>
+
+          {/* Dữ liệu đơn hàng */}
+          <Box p={4} bg="white" borderRadius={12} shadow={3}>
+            <Heading size="sm" mb={3} color="#0d47a1">
+              Đơn hàng theo ngày
+            </Heading>
+            <VStack space={3}>
+              {orderStackData.length === 0 ? (
+                <Text>Không có dữ liệu đơn hàng.</Text>
+              ) : (
+                orderStackData.map((data, index) => (
+                  <Box
+                    key={index}
+                    p={3}
+                    bg="#f0f9ff"
+                    borderRadius={8}
+                    shadow={2}
+                  >
+                    <HStack justifyContent="space-between">
+                      <Text color="#1565c0">{data.date}</Text>
+                      <VStack>
+                        <Text>Đơn hàng chưa xác nhận: {data.unprocessed}</Text>
+                        <Text>Đơn hàng đã xác nhận: {data.processed}</Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                ))
+              )}
+              <Box p={3} bg="#e3f2fd" borderRadius={8} mt={4}>
+                <HStack justifyContent="space-between">
+                  <Text fontWeight="bold">Tổng đơn hàng chưa xử lý:</Text>
+                  <Text fontWeight="bold" color="#e53935" fontSize="lg">
+                    {totalUnprocessedOrders}
+                  </Text>
+                </HStack>
+              </Box>
+            </VStack>
+          </Box>
+
+          {/* Chức năng quản lý */}
+          <Box p={4} bg="white" borderRadius={12} shadow={3}>
+            <Heading size="sm" mb={3} color="#0d47a1">
+              Các chức năng quản lý
+            </Heading>
+            <VStack space={3}>
+              <Pressable
+                style={styles.button}
+                onPress={() =>
+                  router.push("/Manager/Employee/PackageGym/PackageGym")
+                }
+              >
+                <Text style={styles.buttonText}>Quản lý Gói tập</Text>
+              </Pressable>
+              <Pressable
+                style={styles.button}
+                onPress={() => router.push("/Manager/Employee/Product/Product")}
+              >
+                <Text style={styles.buttonText}>Quản lý Sản phẩm</Text>
+              </Pressable>
+              <Pressable
+                style={styles.button}
+                onPress={() =>
+                  router.push(`/Manager/Employee/PurchaseOrder/PurchaseOrder`)
+                }
+              >
+                <Text style={styles.buttonText}>Quản lý Đơn hàng</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.button}
+                onPress={() => router.push("/Manager/Employee/WorkSchedule")}
+              >
+                <Text style={styles.buttonText}>Lịch làm việc</Text>
+              </Pressable>
+            </VStack>
+          </Box>
+        </VStack>
+      </ScrollView>
+      <Box pb={70}></Box>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  backButton: {
+    backgroundColor: "#f0f9ff",
     padding: 10,
-    backgroundColor: "#4CAF50",
-    borderRadius: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    flex: 1,
-  },
-  chartContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  chartLegend: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  legendColor: {
-    width: 15,
-    height: 15,
-    marginRight: 5,
-  },
-  legendLabel: {
-    fontSize: 12,
-  },
-  searchInput: {
-    height: 40,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingLeft: 10,
-  },
-  userItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
+  button: {
+    backgroundColor: "#1565c0",
     padding: 10,
     borderRadius: 8,
+    alignItems: "center",
   },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
 
-export default PackageGymScreen;
+export default HomeAdmin;

@@ -1,11 +1,22 @@
 import React, { useState } from "react";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import { Button, StyleSheet, Text, View, Alert, TouchableOpacity } from "react-native";
+import {
+  Button,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
 
 export default function QRScanScreen() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
+  const [hasScanned, setHasScanned] = useState(false);
   const router = useRouter();
 
   if (!permission) {
@@ -23,8 +34,82 @@ export default function QRScanScreen() {
     );
   }
 
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
-    Alert.alert("Mã QR đã quét", `Nội dung: ${data}`);
+  const handleBarCodeScanned = async ({ data }: { data: any }) => {
+    data = JSON.parse(data);
+    if (hasScanned) return; // Nếu đã quét rồi, không quét tiếp
+
+    setHasScanned(true); // Đánh dấu là đã quét
+
+    try {
+      const accessToken = await SecureStore.getItemAsync("access_token");
+      const phpSessId = await SecureStore.getItemAsync("phpsessid");
+
+      const headers = {
+        PHPSESSID: phpSessId,
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`,
+      };
+
+      const body = {
+        username: data.TenDangNhap,
+        id_device: data.deviceId,
+      };
+
+      const response = await axios.post(
+        `${Constants.expoConfig?.extra?.API_URL}/employee/user/checkin`,
+        body,
+        {
+          headers,
+        }
+      );
+
+      if (response.data.success) {
+        let message = response.data.success;
+        if (response.data.price) {
+          message += ` - Giá: ${response.data.price} VND`;
+        }
+
+        Alert.alert("Check-in thành công", message, [
+          {
+            text: "OK",
+            onPress: () => {
+              setTimeout(() => {
+                setHasScanned(false); // Cho phép quét lại
+              }, 2000);
+            },
+          },
+        ]);
+      } else {
+        Alert.alert("Lỗi", response.data, [
+          {
+            text: "OK",
+            onPress: () => {
+              // Đặt lại trạng thái đã quét sau 2 giây
+              setTimeout(() => {
+                setHasScanned(false); // Cho phép quét lại
+              }, 2000);
+            },
+          },
+        ]);
+      }
+    } catch (error: any) {
+      console.error("Lỗi khi gửi yêu cầu API:", error.response?.data || error);
+      Alert.alert(
+        "Lỗi kết nối",
+        "Không thể kết nối với máy chủ. Vui lòng kiểm tra lại kết nối mạng.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Đặt lại trạng thái đã quét sau 2 giây
+              setTimeout(() => {
+                setHasScanned(false); // Cho phép quét lại
+              }, 2000);
+            },
+          },
+        ]
+      );
+    }
   };
 
   return (
@@ -41,13 +126,10 @@ export default function QRScanScreen() {
           <View style={[styles.overlayBlur, styles.bottomBlur]} />
           <View style={[styles.overlayBlur, styles.leftBlur]} />
           <View style={[styles.overlayBlur, styles.rightBlur]} />
-
-          {/* Ô vuông chính giữa */}
           <View style={styles.square} />
         </View>
       </CameraView>
 
-      {/* Nút Quay lại */}
       <TouchableOpacity style={styles.goBack} onPress={() => router.back()}>
         <Text style={styles.goBackText}>Quay lại</Text>
       </TouchableOpacity>

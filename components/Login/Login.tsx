@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Icon, Input, Stack, Text } from "native-base";
+import { Button, Icon, Input, Stack, Text, useToast } from "native-base";
 import { Pressable } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,22 +19,25 @@ const MyForm: React.FC<MyFormProps> = ({ setScreen, onLogin }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const auth = useSelector((state: RootState) => state.auth);
+  const toast = useToast();
 
   const handleLogin = async () => {
     try {
       await dispatch(login(username, password));
-    } catch (error) {
-      console.error("Login failed", error);
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
     if (auth.user) {
-      onLogin(); // Gọi onLogin nếu user đã được cập nhật
+      onLogin();
     } else if (auth.error) {
-      console.log("User not updated after login:" + auth.error);
+      toast.show({
+        title: "Đăng nhập thất bại, kiểm tra lại thông tin",
+        duration: 3000,
+      });
+      console.log("Login error:", auth.error);
     }
-  }, [auth.user, auth.error]); 
+  }, [auth.user, auth.error]);
 
   return (
     <Stack space={4} w="100%" alignItems="center">

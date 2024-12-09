@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  ScrollView,
   Image,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from "react-native";
 import {
   fetchPersonalTrainers,
@@ -16,6 +15,7 @@ import {
 } from "./api";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Text, View } from "native-base";
 
 interface PersonalTrainer {
   IDHLV: number;
@@ -32,34 +32,38 @@ interface PersonalTrainer {
 
 export default function PersonalTrainerScreen() {
   const [trainers, setTrainers] = useState<PersonalTrainer[]>([]);
-  const [verifiedTrainers, setVerifiedTrainers] = useState<PersonalTrainer[]>(
-    []
-  );
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const trainerResponse = await fetchPersonalTrainers();
-        if (trainerResponse.status === 200) {
-          setTrainers(trainerResponse.data);
-          setError(null);
-        }
-
-        const verifiedResponse = await fetchAllPersonalTrainers();
-        setVerifiedTrainers(verifiedResponse);
-      } catch (err: any) {
-        console.log("Error fetching trainers:", err.response?.data || err);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const trainerResponse = await fetchPersonalTrainers();
+      if (trainerResponse.status === 200) {
+        setTrainers(trainerResponse.data);
+        setError(null);
+      } else {
         setError("Không có huấn luyện viên nào đang chờ xác thực.");
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err: any) {
+      console.log("Error fetching trainers:", err.response?.data || err);
+      setError("Không có huấn luyện viên nào đang chờ xác thực.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const handleAccept = async (id: number) => {
     try {
@@ -89,50 +93,51 @@ export default function PersonalTrainerScreen() {
     }
   };
 
-  const renderTrainer = ({ item }: { item: PersonalTrainer }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.avt }} style={styles.avatar} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.HoTen}</Text>
-        <Text style={styles.detail}>Địa chỉ: {item.DiaChi}</Text>
-        <Text style={styles.detail}>Email: {item.Email}</Text>
-        <Text style={styles.detail}>SDT: {item.SDT}</Text>
-        <Text style={styles.detail}>Dịch vụ: {item.DichVu}</Text>
-        <Text style={styles.detail}>
-          Giá thuê: {item.GiaThue.toLocaleString()} VNĐ
-        </Text>
-        <Text style={styles.detail}>Chứng chỉ: {item.ChungChi}</Text>
+  const renderTrainer = (trainer: PersonalTrainer) => (
+    <View style={styles.card} key={trainer.IDHLV}>
+      <View>
+        <View style={styles.infoRow} alignItems={"center"}>
+          <Image source={{ uri: trainer.avt }} style={styles.avatar} />
+          <Text style={styles.name}>{trainer.HoTen}</Text>
+        </View>
+        <View style={styles.info} pl={3}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Địa chỉ: </Text>
+            <Text style={styles.value}>{trainer.DiaChi}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Email: </Text>
+            <Text style={styles.value}>{trainer.Email}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>SDT: </Text>
+            <Text style={styles.value}>{trainer.SDT}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Dịch vụ: </Text>
+            <Text style={styles.value}>{trainer.DichVu}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Giá thuê: </Text>
+            <Text style={styles.value}>
+              {trainer.GiaThue.toLocaleString()} VNĐ
+            </Text>
+          </View>
+        </View>
       </View>
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.acceptButton}
-          onPress={() => handleAccept(item.IDHLV)}
+          onPress={() => handleAccept(trainer.IDHLV)}
         >
           <Text style={styles.buttonText}>Xác nhận</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.rejectButton}
-          onPress={() => handleReject(item.IDHLV)}
+          onPress={() => handleReject(trainer.IDHLV)}
         >
           <Text style={styles.buttonText}>Từ chối</Text>
         </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderVerifiedTrainer = ({ item }: { item: PersonalTrainer }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.avt }} style={styles.avatar} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.HoTen}</Text>
-        <Text style={styles.detail}>Địa chỉ: {item.DiaChi}</Text>
-        <Text style={styles.detail}>Email: {item.Email}</Text>
-        <Text style={styles.detail}>SDT: {item.SDT}</Text>
-        <Text style={styles.detail}>Dịch vụ: {item.DichVu}</Text>
-        <Text style={styles.detail}>
-          Giá thuê: {item.GiaThue.toLocaleString()} VNĐ
-        </Text>
-        <Text style={styles.detail}>Chứng chỉ: {item.ChungChi}</Text>
       </View>
     </View>
   );
@@ -153,21 +158,13 @@ export default function PersonalTrainerScreen() {
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : (
-        <FlatList
-          data={trainers}
-          renderItem={renderTrainer}
-          keyExtractor={(item) => item.IDHLV.toString()}
-          ListHeaderComponent={
-            <Text >PT đã xác thực</Text>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
-          ListFooterComponent={
-            <FlatList
-              data={verifiedTrainers}
-              renderItem={renderVerifiedTrainer}
-              keyExtractor={(item) => item.IDHLV.toString()}
-            />
-          }
-        />
+        >
+          {trainers.map(renderTrainer)}
+        </ScrollView>
       )}
     </View>
   );
@@ -184,55 +181,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginLeft: 50,
-  },
-  card: {
-    flexDirection: "row",
-    marginBottom: 16,
-    padding: 16,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 16,
-  },
-  info: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  detail: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  actions: {
-    justifyContent: "space-around",
-  },
-  acceptButton: {
-    backgroundColor: "#28a745",
-    padding: 8,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  rejectButton: {
-    backgroundColor: "#dc3545",
-    padding: 8,
-    borderRadius: 4,
-  },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontSize: 14,
   },
   errorText: {
     fontSize: 16,
@@ -256,5 +204,72 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    marginBottom: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 16,
+  },
+  info: {
+    flex: 1,
+    marginBottom: 10,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  infoRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#444",
+    width: "25%",
+  },
+  value: {
+    fontSize: 14,
+    color: "#555",
+    width: "75%",
+  },
+  actions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  acceptButton: {
+    flex: 1,
+    backgroundColor: "#28a745",
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: "center",
+    marginRight: 8,
+  },
+  rejectButton: {
+    flex: 1,
+    backgroundColor: "#dc3545",
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });

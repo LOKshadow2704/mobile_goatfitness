@@ -38,7 +38,6 @@ export const login = (username: string, password: string) => async (dispatch: Di
     await SecureStore.setItemAsync('refresh_token', response.refresh_token);
     await SecureStore.setItemAsync('phpsessid', response.phpsessid);
     await SecureStore.setItemAsync('user', JSON.stringify(user));
-    console.log(response)
     // Dispatch action thành công
     dispatch({
       type: authConstants.LOGIN_SUCCESS,
@@ -164,28 +163,7 @@ const ApiLogin = async (username: string, password: string): Promise<ApiResponse
       }
     });
     return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      console.error('Axios Error Details:');
-
-      if (error.response) {
-        console.error('Response Status:', error.response.status);
+  } catch (error: any) {
         console.error('Response Data:', error.response.data);
-        console.error('Response Headers:', error.response.headers);
-        throw new Error(error.response.data.message || 'Invalid username or password');
-      } else if (error.request) {
-        console.error('Request Data:', error.request);
-        throw new Error('Network error');
-      } else {
-        console.error('Error Message:', error.message);
-        throw new Error('An unexpected error occurred');
-      }
-    } else if (error instanceof Error) {
-      console.error('Error Message:', error.message);
-      throw new Error('An unexpected error occurred');
-    } else {
-      console.error('Unexpected Error:', error);
-      throw new Error('An unexpected error occurred');
-    }
   }
 };

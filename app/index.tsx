@@ -4,7 +4,6 @@ import WelcomeScreen from "@/layouts/Welcome/Welcome";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { autoLogin } from "@/redux/actions/authActions";
-import * as SecureStore from "expo-secure-store";
 export default function App() {
   const router = useRouter();
   const dispatch = useDispatch(); // Khai báo dispatch để gọi action

@@ -96,7 +96,7 @@ const HomeContentsScreen = () => {
                   rightIcon={<FontAwesome6 name="right-long" size={20} />}
                   onPress={handleCheckIn}
                 >
-                  Check in
+                  Lấy QR
                 </Button>
               </VStack>
             </Center>

@@ -30,7 +30,7 @@ const UserScreen: React.FC = () => {
     useState(false);
   const [userData, setUserData] = useState<any>({});
   const [originalData, setOriginalData] = useState<any>({});
-  const inputRef = useRef(null);
+  const inputRef = useRef<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const route = useRouter();
   const dispatch = useDispatch();

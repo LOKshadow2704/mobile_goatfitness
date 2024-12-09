@@ -1,24 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Heading, HStack, Icon, Input, Text } from "native-base";
-import {
-  ScrollView,
-  RefreshControl,
-  TouchableWithoutFeedback,
-  Keyboard,
-  View,
-  StyleSheet,
-  TextInput,
-  Dimensions,
-} from "react-native";
+import { Box, Heading, HStack, Icon, Input, Text, Button } from "native-base";
+import { ScrollView, RefreshControl, TouchableWithoutFeedback, Keyboard, View, StyleSheet, TextInput, Dimensions } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import PersonelTrainerItem from "@/components/PersonelTrainerItem/PersonelTrainerItem";
 import axios from "axios";
 import Constants from "expo-constants";
 import { format } from "date-fns";
 import * as SecureStore from "expo-secure-store";
 import { LinearGradient } from "expo-linear-gradient";
-import BackToTop from "@/components/BackToTop/BackToTop"; // Import component BackToTop
+import BackToTop from "@/components/BackToTop/BackToTop";
+import ApplyPT from "./ApplyPT";
 
 const { width: viewportWidth } = Dimensions.get("window");
 
@@ -27,12 +18,12 @@ const PersonalTrainerScreen = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false); // State để quản lý nút BackToTop
-  const [errorSchedule, setErrorSchedule] = useState(false); // State kiểm tra lỗi API lịch tập
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [errorSchedule, setErrorSchedule] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); 
   const inputRef = useRef<TextInput>(null);
-  const scrollViewRef = useRef(null); // Ref cho ScrollView
+  const scrollViewRef = useRef(null);
 
-  // Hàm lấy dữ liệu từ API
   useEffect(() => {
     fetchData();
   }, []);
@@ -43,13 +34,9 @@ const PersonalTrainerScreen = () => {
       const accessToken = await SecureStore.getItemAsync("access_token");
       const phpSessId = await SecureStore.getItemAsync("phpsessid");
 
-      // Fetching PT data
-      const ptsResponse = await axios.get(
-        `${Constants.expoConfig?.extra?.API_URL}/personalTrainer/all`
-      );
+      const ptsResponse = await axios.get(`${Constants.expoConfig?.extra?.API_URL}/personalTrainer/all`);
       setPts(ptsResponse.data);
 
-      // Fetching practice schedule data
       try {
         const schedulesResponse = await axios.get(
           `${Constants.expoConfig?.extra?.API_URL}/personalTrainer/practiceSchedule`,
@@ -62,13 +49,13 @@ const PersonalTrainerScreen = () => {
           }
         );
         setSchedules(schedulesResponse.data);
-        setErrorSchedule(false); // Reset error state nếu thành công
-      } catch (err:any) {
-        setErrorSchedule(true); // Đặt state lỗi nếu API trả lỗi
-        console.log("Lỗi khi lấy lịch tập:", err.response?.data );
+        setErrorSchedule(false);
+      } catch (err: any) {
+        setErrorSchedule(true);
+        console.log("Lỗi khi lấy lịch tập:", err.response?.data);
       }
-    } catch (err:any) {
-      console.error("Lỗi khi lấy dữ liệu huấn luyện viên:", err.response?.data );
+    } catch (err: any) {
+      console.error("Lỗi khi lấy dữ liệu huấn luyện viên:", err.response?.data);
     } finally {
       setLoading(false);
     }
@@ -90,10 +77,9 @@ const PersonalTrainerScreen = () => {
 
   const upcomingSchedules = getUpcomingSchedules(schedules);
 
-  // Hàm xử lý sự kiện cuộn (scroll) để hiển thị nút BackToTop
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    setShowBackToTop(offsetY > 300); // Hiển thị nút khi cuộn xuống hơn 300px
+    setShowBackToTop(offsetY > 300);
   };
 
   return (
@@ -102,11 +88,9 @@ const PersonalTrainerScreen = () => {
       style={styles.container}
       nestedScrollEnabled={true}
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      onScroll={handleScroll} // Xử lý sự kiện cuộn
-      scrollEventThrottle={16} // Cập nhật mỗi 16ms
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
     >
       <Box px={5} pt={5}>
         <Heading fontSize="md" mb={3}>
@@ -115,7 +99,7 @@ const PersonalTrainerScreen = () => {
         {loading ? (
           <Text>Đang tải dữ liệu...</Text>
         ) : errorSchedule ? (
-          <Text>Không có lịch tập sắp tới</Text> // Hiển thị thông báo lỗi nếu API lịch tập gặp sự cố
+          <Text>Không có lịch tập sắp tới</Text>
         ) : upcomingSchedules.length > 0 ? (
           upcomingSchedules.map((schedule: any) => (
             <Box
@@ -123,58 +107,36 @@ const PersonalTrainerScreen = () => {
               p={4}
               mb={4}
               borderRadius="12"
-              style={styles.scheduleBox} // Áp dụng hiệu ứng bóng đổ
+              style={styles.scheduleBox}
             >
               <LinearGradient
-                colors={ 
+                colors={
                   schedule.TrangThai === 0
-                    ? ["#FFB6B6", "#FF6666"] // Màu gradient cho trạng thái chưa thanh toán
-                    : ["#A1F5A1", "#66CC66"] // Màu gradient cho trạng thái đã thanh toán
+                    ? ["#FFB6B6", "#FF6666"]
+                    : ["#A1F5A1", "#66CC66"]
                 }
                 start={[0, 0]}
                 end={[1, 1]}
                 style={styles.gradientBox}
               >
                 <HStack alignItems="center" space={3} mb={2}>
-                  <Icon
-                    as={<MaterialCommunityIcons name="calendar" />}
-                    size={5}
-                    color="white"
-                  />
+                  <Icon as={<MaterialCommunityIcons name="calendar" />} size={5} color="white" />
                   <Text color="white" fontWeight="bold" fontSize="sm">
                     Ngày bắt đầu: {format(new Date(schedule.NgayDangKy), "Pp")}
                   </Text>
                 </HStack>
 
                 <HStack alignItems="center" space={3} mb={2}>
-                  <Icon
-                    as={<MaterialCommunityIcons name="calendar-range" />}
-                    size={5}
-                    color="white"
-                  />
+                  <Icon as={<MaterialCommunityIcons name="calendar-range" />} size={5} color="white" />
                   <Text color="white" fontWeight="bold" fontSize="sm">
                     Ngày hết hạn: {format(new Date(schedule.NgayHetHan), "Pp")}
                   </Text>
                 </HStack>
 
                 <HStack alignItems="center" space={3}>
-                  <Icon
-                    as={
-                      <MaterialCommunityIcons name="checkbox-marked-circle" />
-                    }
-                    size={5}
-                    color={schedule.TrangThai === 0 ? "#FF6666" : "#66CC66"}
-                  />
-                  <Text
-                    style={styles.statusText}
-                    color="white"
-                    fontWeight="bold"
-                    fontSize="md"
-                  >
-                    Trạng thái:{" "}
-                    {schedule.TrangThai === 0
-                      ? "Chưa thanh toán"
-                      : "Đã thanh toán"}
+                  <Icon as={<MaterialCommunityIcons name="checkbox-marked-circle" />} size={5} color={schedule.TrangThai === 0 ? "#FF6666" : "#66CC66"} />
+                  <Text style={styles.statusText} color="white" fontWeight="bold" fontSize="md">
+                    Trạng thái: {schedule.TrangThai === 0 ? "Chưa thanh toán" : "Đã thanh toán"}
                   </Text>
                 </HStack>
               </LinearGradient>
@@ -195,28 +157,11 @@ const PersonalTrainerScreen = () => {
             <MaterialCommunityIcons name="filter" size={22} />
           </HStack>
         </HStack>
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-          <View style={{ flex: 1 }}>
-            <Input
-              ref={inputRef}
-              placeholder="Tìm kiếm"
-              width="100%"
-              borderRadius="4"
-              py="2"
-              px="1"
-              fontSize="12"
-              InputLeftElement={
-                <Icon
-                  m="2"
-                  ml="3"
-                  size="4"
-                  color="gray.400"
-                  as={<FontAwesome5 name="search" />}
-                />
-              }
-            />
-          </View>
-        </TouchableWithoutFeedback>
+
+        {/* Thêm nút Apply */}
+        <Button colorScheme="blue" onPress={() => setIsModalOpen(true)}>
+          Đăng ký làm việc
+        </Button>
       </Box>
 
       <Box pt={5}>
@@ -225,9 +170,11 @@ const PersonalTrainerScreen = () => {
         ))}
       </Box>
 
-      {/* Thêm component BackToTop */}
       <BackToTop scrollViewRef={scrollViewRef} showButton={showBackToTop} />
       <Box mb={100}></Box>
+
+      {/* Modal ApplyPT */}
+      <ApplyPT isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </ScrollView>
   );
 };
@@ -236,7 +183,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
   gradientBox: {
     padding: 15,
     borderRadius: 12,

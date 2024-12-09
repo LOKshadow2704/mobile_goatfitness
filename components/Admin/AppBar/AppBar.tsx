@@ -7,6 +7,7 @@ import {
   useDisclose,
   Modal,
   Button,
+  VStack,
 } from "native-base";
 import React, { useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet } from "react-native";
@@ -53,74 +54,39 @@ export default function AdminAppBar() {
         {/* HStack cho các icon và menu */}
         <Box>
           <HStack
-            space={50}
+            space={5}
             alignItems="center"
             h={"100%"}
             justifyContent="center"
           >
             {/* Icon Trang chủ */}
             <Pressable onPress={() => router.push(`/Manager/Employee`)}>
-              <FontAwesomeIcon name="home" style={styles.icon} />
+              <VStack alignItems="center">
+                <FontAwesomeIcon name="home" style={styles.icon} />
+                <Text style={styles.iconText}>Trang chủ</Text>
+              </VStack>
             </Pressable>
 
             {/* Icon QR Code */}
             <Pressable onPress={() => router.push(`/Manager/Employee/QRScan`)}>
-              <FontAwesomeIcon name="qrcode" style={styles.icon} />
+              <VStack alignItems="center">
+                <FontAwesomeIcon name="qrcode" style={styles.icon} />
+                <Text style={styles.iconText}>Quét QR</Text>
+              </VStack>
             </Pressable>
 
             {/* Icon Menu */}
-            <Pressable onPress={onOpen}>
-              <FontAwesomeIcon name="list-ul" style={styles.icon} />
+            <Pressable
+              onPress={() => router.push(`/Manager/Admin/AccountInfo`)}
+            >
+              <VStack alignItems="center">
+                <FontAwesomeIcon name="user" style={styles.icon} />
+                <Text style={styles.iconText}>Tài khoản</Text>
+              </VStack>
             </Pressable>
           </HStack>
         </Box>
       </HStack>
-
-      {/* Menu Actionsheet */}
-      <Actionsheet isOpen={isOpen} onClose={onClose}>
-        <Actionsheet.Content>
-          <Actionsheet.Item  onPress={() => router.push(`/Manager/Employee/AccountInfo`)}>
-            <HStack>
-              <FontAwesomeIcon name="user" style={styles.menuIcon} />
-              <Text style={styles.menuText}>Thông tin cá nhân</Text>
-            </HStack>
-          </Actionsheet.Item>
-          <Actionsheet.Item onPress={handleLogout}>
-            <HStack>
-              <MaterialIconsIcon name="logout" style={styles.menuIcon} />
-              <Text style={styles.menuText}>Đăng xuất</Text>
-            </HStack>
-          </Actionsheet.Item>
-          <Actionsheet.Item onPress={onClose} color="red.500">
-            <Text style={styles.closeText}>Đóng</Text>
-          </Actionsheet.Item>
-        </Actionsheet.Content>
-      </Actionsheet>
-
-      {/* Modal xác nhận đăng xuất */}
-      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)}>
-        <Modal.Content maxWidth="400px">
-          <Modal.CloseButton />
-          <Modal.Header>Đăng xuất</Modal.Header>
-          <Modal.Body>
-            <Text>Bạn có chắc chắn muốn đăng xuất không?</Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button.Group space={2}>
-              <Button
-                variant="ghost"
-                colorScheme="blueGray"
-                onPress={() => setShowLogoutModal(false)}
-              >
-                Hủy
-              </Button>
-              <Button colorScheme="danger" onPress={handleConfirmLogout}>
-                Đăng xuất
-              </Button>
-            </Button.Group>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -158,5 +124,10 @@ const styles = StyleSheet.create({
   closeText: {
     fontSize: 18,
     color: "red",
+  },
+  iconText: {
+    fontSize: 14,
+    color: "#000",
+    marginTop: 5,
   },
 });

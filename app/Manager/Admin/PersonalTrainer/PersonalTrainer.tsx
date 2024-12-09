@@ -1,4 +1,3 @@
-
 import AdminLayout from "@/layouts/AdminLayout/AdminLayout";
 import PersonalTrainerScreen from "@/screens/Admin/PersonalTrainer/PersonalTrainer";
 

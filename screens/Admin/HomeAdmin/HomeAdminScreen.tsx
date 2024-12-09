@@ -37,26 +37,26 @@ const HomeAdminScreen: React.FC = () => {
       // Parse data
       setStats({
         users: {
-          employees: data.user_data.find((u) => u.VaiTro === "Employee")?.SoLuong || 0,
-          trainers: data.user_data.find((u) => u.VaiTro === "HLV")?.SoLuong || 0,
-          customers: data.user_data.find((u) => u.VaiTro === "KhachHang")?.SoLuong || 0,
+          employees: data.user_data.find((u :any) => u.VaiTro === "Employee")?.SoLuong || 0,
+          trainers: data.user_data.find((u :any) => u.VaiTro === "HLV")?.SoLuong || 0,
+          customers: data.user_data.find((u :any) => u.VaiTro === "KhachHang")?.SoLuong || 0,
         },
         orders: {
           confirmed: data.order_data
-            .filter((o) => o.TrangThai === "Đã xác nhận")
-            .reduce((sum, o) => sum + o.SoLuongDonHang, 0),
+            .filter((o :any) => o.TrangThai === "Đã xác nhận")
+            .reduce((sum :any, o :any) => sum + o.SoLuongDonHang, 0),
           unconfirmed: data.order_data
-            .filter((o) => o.TrangThai === "Chưa xác nhận")
-            .reduce((sum, o) => sum + o.SoLuongDonHang, 0),
+            .filter((o :any) => o.TrangThai === "Chưa xác nhận")
+            .reduce((sum :any, o :any) => sum + o.SoLuongDonHang, 0),
           today: data.order_data
-            .filter((o) => o.NgayDat === todayDate)
-            .reduce((sum, o) => sum + o.SoLuongDonHang, 0),
+            .filter((o :any) => o.NgayDat === todayDate)
+            .reduce((sum :any, o :any) => sum + o.SoLuongDonHang, 0),
         },
         revenue: {
-          total: data.order_data.reduce((sum, o) => sum + parseFloat(o.DoanhThu), 0),
+          total: data.order_data.reduce((sum :any , o :any) => sum + parseFloat(o.DoanhThu), 0),
         },
         subscriptions: {
-          today: data.gympack_data.filter((g) => g.NgayDangKy === todayDate).length,
+          today: data.gympack_data.filter((g :any) => g.NgayDangKy === todayDate).length,
           previous: data.gympack_data.length,
         },
       });
@@ -133,7 +133,7 @@ const HomeAdminScreen: React.FC = () => {
             </Button>
             <Button
               colorScheme="blue"
-              onPress={() => router.push("/manage-employees")}
+              onPress={() => router.push("/Manager/Admin/Employee/EmployeeManagement")}
             >
               Quản lý nhân viên
             </Button>

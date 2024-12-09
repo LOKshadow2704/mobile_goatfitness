@@ -23,11 +23,92 @@ const PersonalTrainerSchedule: React.FC<PersonalTrainerScheduleProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [scheduleData, setScheduleData] = useState<Array<any>>([]);
+  const [trainerData, setTrainerData] = useState<any>(null);
+  const [scheduleData, setScheduleData] = useState<any[]>([
+    {
+      "IDHoaDon": 58,
+      "IDKhachHang": 23,
+      "TrangThaiThanhToan": "chưa thanh toán",
+      "NgayDangKy": "2024-12-02 08:00:00",
+      "NgayHetHan": "2024-12-02 09:00:00",
+      "TrangThai": 0,
+      "HoTen": "Nguyễn Thành Lộc",
+      "SDT": "0123456777",
+    },
+    {
+      "IDHoaDon": 61,
+      "IDKhachHang": 23,
+      "TrangThaiThanhToan": "Chưa thanh toán",
+      "NgayDangKy": "2024-12-07 17:00:00",
+      "NgayHetHan": "2024-12-07 18:00:00",
+      "TrangThai": 0,
+      "HoTen": "Nguyễn Thành Lộc",
+      "SDT": "0123456777",
+    },
+    {
+      "IDHoaDon": 64,
+      "IDKhachHang": 23,
+      "TrangThaiThanhToan": "Chưa thanh toán",
+      "NgayDangKy": "2024-12-08 08:00:00",
+      "NgayHetHan": "2024-12-08 09:00:00",
+      "TrangThai": 0,
+      "HoTen": "Nguyễn Thành Lộc",
+      "SDT": "0123456777",
+    },
+    {
+      "IDHoaDon": 65,
+      "IDKhachHang": 23,
+      "TrangThaiThanhToan": "Chưa thanh toán",
+      "NgayDangKy": "2024-12-09 19:00:00",
+      "NgayHetHan": "2024-12-09 20:00:00",
+      "TrangThai": 0,
+      "HoTen": "Nguyễn Thành Lộc",
+      "SDT": "0123456777",
+    },
+  ]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [pendingApproval, setPendingApproval] = useState<boolean>(false);
 
-  const fetchSchedule = async () => {
+  // Lấy yêu cầu huấn luyện viên
+  const fetchTrainerData = async () => {
     setLoading(true);
+    try {
+      const accessToken = await SecureStore.getItemAsync("access_token");
+      const phpSessId = await SecureStore.getItemAsync("phpsessid");
+
+      const response = await axios.get(
+        `${Constants.expoConfig?.extra?.API_URL}/user/register_pt/see`,
+        {
+          headers: {
+            PHPSESSID: phpSessId,
+            Authorization: `Bearer ${accessToken}`,
+            "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        const data = response.data;
+        setPendingApproval(data);
+      }
+    } catch (error: any) {
+      if (error.response) {
+        if (error.response.status === 500) {
+          fetchTrainerSchedule();
+        } else {
+          console.log("Lỗi khác:", error.response?.data);
+          alert("Có lỗi xảy ra, vui lòng thử lại.");
+        }
+      } else {
+        console.log("Lỗi không xác định:", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lấy lịch tập của huấn luyện viên
+  const fetchTrainerSchedule = async () => {
     try {
       const accessToken = await SecureStore.getItemAsync("access_token");
       const phpSessId = await SecureStore.getItemAsync("phpsessid");
@@ -42,23 +123,18 @@ const PersonalTrainerSchedule: React.FC<PersonalTrainerScheduleProps> = ({
           },
         }
       );
-
       if (response.status === 200) {
-        setScheduleData(response.data);
-      } else {
-        alert("Không thể lấy lịch tập. Vui lòng thử lại.");
+        setScheduleData(response.data); // Lưu dữ liệu lịch tập vào state
+        console.log(response.data);
       }
-    } catch (error) {
-      console.error("Lỗi khi gọi API lịch tập:", error);
-      alert("Có lỗi xảy ra. Vui lòng thử lại sau.");
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      console.log("Error fetching schedule:", error.response?.data);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      fetchSchedule();
+      fetchTrainerData(); // Lấy thông tin huấn luyện viên khi modal mở
     }
   }, [isOpen]);
 
@@ -68,7 +144,7 @@ const PersonalTrainerSchedule: React.FC<PersonalTrainerScheduleProps> = ({
         <Modal.CloseButton />
         <Modal.Header bg="blue.600" borderRadius="lg">
           <Text color="white" fontSize="lg" fontWeight="bold">
-            Lịch tập
+            Thông tin huấn luyện viên
           </Text>
         </Modal.Header>
         <Modal.Body>
@@ -79,46 +155,33 @@ const PersonalTrainerSchedule: React.FC<PersonalTrainerScheduleProps> = ({
                 Đang tải...
               </Text>
             </Center>
+          ) : pendingApproval ? (
+            <Center>
+              <Text color="gray.600">Bạn đang đợi phê duyệt.</Text>
+            </Center>
           ) : scheduleData.length > 0 ? (
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {scheduleData.map((item, index) => (
-                <Box
-                  key={index}
-                  p={4}
-                  bg="gray.100"
-                  borderRadius="md"
-                  mb={4}
-                  shadow={2}
-                  borderColor="gray.200"
-                  borderWidth={1}
-                >
-                  <Text fontWeight="bold" color="blue.600" mb={1}>
-                    Ngày đăng ký:
+            <VStack space={4}>
+              {scheduleData.map((schedule, index) => (
+                <Box key={index} p={2} borderRadius="md" borderWidth={1} mb={2}>
+                  <Text fontWeight="bold" color="blue.600">
+                    Lịch tập:
                   </Text>
-                  <Text color="gray.600">{item.NgayDangKy}</Text>
+                  <Text color="gray.600">
+                    {schedule.NgayDangKy} - {schedule.NgayHetHan}
+                  </Text>
+                  <Text color="gray.600">
+                    Trạng thái thanh toán: {schedule.TrangThaiThanhToan}
+                  </Text>
+                  <Text color="gray.600">
+                    Khách hàng: {schedule.HoTen} - Số điện thoại: {schedule.SDT}
+                  </Text>
                   <Divider my={2} />
-                  <Text fontWeight="bold" color="blue.600" mb={1}>
-                    Ngày hết hạn:
-                  </Text>
-                  <Text color="gray.600">{item.NgayHetHan}</Text>
-                  <Divider my={2} />
-                  <Text fontWeight="bold" color="blue.600" mb={1}>
-                    Trạng thái thanh toán:
-                  </Text>
-                  <Text color="gray.600">{item.TrangThaiThanhToan}</Text>
-                  <Divider my={2} />
-                  <Text fontWeight="bold" color="blue.600" mb={1}>
-                    Trạng thái:
-                  </Text>
-                  <Text color={item.TrangThai ? "green.600" : "red.600"}>
-                    {item.TrangThai ? "Hoàn thành" : "Chưa hoàn thành"}
-                  </Text>
                 </Box>
               ))}
-            </ScrollView>
+            </VStack>
           ) : (
             <Center>
-              <Text color="gray.600">Không có lịch tập.</Text>
+              <Text color="gray.600">Chưa có lịch tập.</Text>
             </Center>
           )}
         </Modal.Body>

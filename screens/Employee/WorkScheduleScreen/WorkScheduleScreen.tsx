@@ -5,6 +5,7 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import axios from "axios";
 import Constants from "expo-constants";
@@ -13,6 +14,7 @@ import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Box } from "native-base";
 
 interface Schedule {
   Ngay: string;
@@ -25,30 +27,36 @@ const WorkScheduleScreen: React.FC = () => {
   const [filteredSchedules, setFilteredSchedules] = useState<Schedule[]>([]);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState(false); // Trạng thái refresh
   const router = useRouter();
 
+  // Lấy lịch làm việc từ API
+  const fetchSchedules = async () => {
+    const accessToken = await SecureStore.getItemAsync("access_token");
+    const phpSessId = await SecureStore.getItemAsync("phpsessid");
+    try {
+      const response = await axios.get(
+        `${Constants.expoConfig?.extra?.API_URL}/employee/schedule`,
+        {
+          headers: {
+            PHPSESSID: phpSessId || "",
+            Authorization: `Bearer ${accessToken || ""}`,
+            "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`,
+          },
+        }
+      );
+      // Sắp xếp lịch làm việc theo ngày gần nhất
+      const sortedSchedules = response.data.sort((a: any, b: any) => {
+        return moment(a.Ngay).isBefore(b.Ngay) ? 1 : -1;
+      });
+      setSchedules(sortedSchedules);
+      setFilteredSchedules(sortedSchedules);
+    } catch (error) {
+      console.error("Error fetching schedule:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchSchedules = async () => {
-      const accessToken = await SecureStore.getItemAsync("access_token");
-      const phpSessId = await SecureStore.getItemAsync("phpsessid");
-      try {
-        const response = await axios.get(
-          `${Constants.expoConfig?.extra?.API_URL}/employee/schedule`,
-          {
-            headers: {
-              PHPSESSID: phpSessId || "",
-              Authorization: `Bearer ${accessToken || ""}`,
-              "User-Agent": `${Constants.expoConfig?.extra?.AGENT}`,
-            },
-          }
-        );
-        setSchedules(response.data);
-        setFilteredSchedules(response.data);
-      } catch (error) {
-        console.error("Error fetching schedule:", error);
-      }
-    };
     fetchSchedules();
   }, []);
 
@@ -71,6 +79,12 @@ const WorkScheduleScreen: React.FC = () => {
       (schedule) => schedule.Ngay === date
     );
     setFilteredSchedules(newFilteredSchedules);
+  };
+
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchSchedules(); // Tải lại dữ liệu
+    setIsRefreshing(false);
   };
 
   const renderItem = ({ item }: { item: Schedule }) => {
@@ -127,6 +141,12 @@ const WorkScheduleScreen: React.FC = () => {
         data={filteredSchedules}
         renderItem={renderItem}
         keyExtractor={(item, index) => `${item.Ngay}-${index}`}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh} // Hàm refresh
+          />
+        }
       />
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -134,6 +154,7 @@ const WorkScheduleScreen: React.FC = () => {
         onConfirm={handleDateConfirm}
         onCancel={() => setDatePickerVisibility(false)}
       />
+      <Box pb={70}></Box>
     </View>
   );
 };
@@ -147,7 +168,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    marginLeft: '12%'
+    marginLeft: "12%",
   },
   filterButton: {
     backgroundColor: "#007bff",

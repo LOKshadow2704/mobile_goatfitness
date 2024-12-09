@@ -62,6 +62,8 @@ export default function Layout() {
               {/* Stack Admin */}
               <Stack.Screen name="Manager/Admin/index" />
               <Stack.Screen name="Manager/Admin/AccountInfo" />
+              <Stack.Screen name="Manager/Admin/Employee/EmployeeManagement" />
+              <Stack.Screen name="Manager/Admin/PersonalTrainer/PersonalTrainer" />
             </Stack>
           </View>
         </NativeBaseProvider>
