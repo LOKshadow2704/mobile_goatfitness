@@ -19,7 +19,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import FontAwesomeIcon from "react-native-vector-icons/FontAwesome";
-import RenderHtml from "react-native-render-html";
 import Constants from "expo-constants";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import PaymentSelect from "@/components/PaymentSelect/PaymentSelect";
@@ -200,11 +199,9 @@ const Personal_TrainerDetailScreen: React.FC<Personal_TrainerDetailScreenProps> 
                 Đăng ký ngay
               </Button>
             </HStack>
+            {/* Hiển thị thông tin chứng chỉ dưới dạng văn bản */}
             <View px={3}>
-              <RenderHtml
-                source={{ html: Personal_Trainer.ChungChi }}
-                contentWidth={width}
-              />
+              <Text>{Personal_Trainer.ChungChi}</Text>
             </View>
 
             {/* DateTimePicker cho giờ bắt đầu */}

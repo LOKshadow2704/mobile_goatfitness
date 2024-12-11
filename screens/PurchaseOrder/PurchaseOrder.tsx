@@ -56,7 +56,7 @@ const PurchaseOrderScreen: React.FC = () => {
             },
           }
         );
-
+        console.log(response.data)
         // Kiểm tra xem response.data.orders có phải là một mảng không
         if (Array.isArray(response.data.orders)) {
           setOrders(response.data.orders);

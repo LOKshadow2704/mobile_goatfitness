@@ -5,7 +5,6 @@ import { Box, Button, Heading, HStack, Text, View, VStack, useToast } from "nati
 import React, { useEffect, useState } from "react";
 import { Dimensions, ImageBackground, StyleSheet, useWindowDimensions } from "react-native";
 import FontAwesomeIcon from "react-native-vector-icons/FontAwesome";
-import RenderHtml from 'react-native-render-html';
 import Constants from "expo-constants"; 
 import * as SecureStore from "expo-secure-store";
 
@@ -21,6 +20,7 @@ interface Product {
   IMG: string;
   SoLuong: number;
 }
+
 const screenWidth = Dimensions.get("window").width;
 
 const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ id }) => {
@@ -126,7 +126,8 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ id }) => {
               <Button w={"49%"}>Mua ngay</Button>
             </HStack>
             <View px={3}>
-              <RenderHtml source={{ html: product.Mota }} contentWidth={width} />
+              {/* Thay thế RenderHtml bằng Text để hiển thị mô tả sản phẩm */}
+              <Text>{product.Mota}</Text>
             </View>
           </>
         ) : (

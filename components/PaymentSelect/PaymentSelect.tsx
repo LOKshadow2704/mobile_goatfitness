@@ -55,7 +55,7 @@ export default function PaymentSelect({
           },
         }
       );
-
+      console.log(response.data)
       if (response.status === 200) {
         if (payment_code === 2 && response.data?.success) {
           await Linking.openURL(response.data.success);

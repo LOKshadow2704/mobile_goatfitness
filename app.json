@@ -53,7 +53,7 @@
       "eas": {
         "projectId": "7e21432a-2bd2-46c3-9b33-a5b071bd6596"
       },
-      "API_URL": "https://servergoatfitness.x10.mx/Backend",
+      "API_URL": "http://192.168.61.15:8080/Backend",
       "AGENT": "MOBILE_GOATFITNESS"
     }
   }
