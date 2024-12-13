@@ -54,12 +54,12 @@ const HomeAdmin: React.FC = () => {
       // Xử lý dữ liệu khách hàng check-in
       const checkinData = data.checkin || [];
       const customerCountByDate = checkinData.reduce((acc: any, entry: any) => {
-        const date = entry.ThoiGian.split(" ")[0];  // Chỉ lấy phần ngày
+        const date = entry.ThoiGian.split(" ")[0]; // Chỉ lấy phần ngày
         if (!acc[date]) acc[date] = { checkIn: 0, checkOut: 0 };
 
         // Tính số lần check-in và check-out
-        if (entry.CheckOut === 1) acc[date].checkOut += 1;  // Nếu có check-out
-        else acc[date].checkIn += 1;  // Nếu không có check-out (check-in)
+        if (entry.CheckOut === 1) acc[date].checkOut += 1; // Nếu có check-out
+        else acc[date].checkIn += 1; // Nếu không có check-out (check-in)
         return acc;
       }, {});
 
@@ -70,7 +70,9 @@ const HomeAdmin: React.FC = () => {
           date,
           totalCheckIn: customerCountByDate[date].checkIn,
           totalCheckOut: customerCountByDate[date].checkOut,
-          totalCheckInCheckOut: customerCountByDate[date].checkIn + customerCountByDate[date].checkOut,  // Tổng check-in và check-out
+          totalCheckInCheckOut:
+            customerCountByDate[date].checkIn +
+            customerCountByDate[date].checkOut, // Tổng check-in và check-out
         }));
       setCustomerStackData(sortedCustomerData);
 
@@ -83,7 +85,7 @@ const HomeAdmin: React.FC = () => {
       setTotalRevenue(totalRevenue);
 
       const orderCountByDate = ordersData.reduce((acc: any, order: any) => {
-        const date = order.NgayDat.split(" ")[0];  // Chỉ lấy phần ngày
+        const date = order.NgayDat.split(" ")[0]; // Chỉ lấy phần ngày
         if (!acc[date]) acc[date] = { processed: 0, unprocessed: 0 };
         if (order.TrangThai === "Chưa xác nhận") acc[date].unprocessed += 1;
         else acc[date].processed += 1;
@@ -187,7 +189,8 @@ const HomeAdmin: React.FC = () => {
                     <HStack justifyContent="space-between">
                       <Text color="#1565c0">{data.date}</Text>
                       <Text>
-                       Check-in: {data.totalCheckIn}, Check-out: {data.totalCheckOut}
+                        Check-in: {data.totalCheckIn}, Check-out:{" "}
+                        {data.totalCheckOut}
                       </Text>
                     </HStack>
                   </Box>
@@ -261,6 +264,12 @@ const HomeAdmin: React.FC = () => {
                 }
               >
                 <Text style={styles.buttonText}>Quản lý Đơn hàng</Text>
+              </Pressable>
+              <Pressable
+                style={styles.button}
+                onPress={() => router.push("/Manager/Employee/Categories/Categories")}
+              >
+                <Text style={styles.buttonText}>Quản lý loại sản phẩm</Text>
               </Pressable>
 
               <Pressable

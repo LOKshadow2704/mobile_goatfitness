@@ -68,7 +68,7 @@ export const updateCategory = async (categoryId: number, categoryName: string) =
       }
     );
     
-  } catch (error) {
+  } catch (error :any) {
     console.error("Error updating category:", error.response.data);
     throw error;
   }
